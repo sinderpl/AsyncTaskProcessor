@@ -5,7 +5,7 @@ FROM golang:1.12-alpine
 
 # Setup
 WORKDIR /app
-COPY go.mod go.sum ./
+COPY go.mod ./
 RUN go mod download
 COPY . .
 
