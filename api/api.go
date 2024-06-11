@@ -73,6 +73,7 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 
 func (s *server) handleGetTaskInfo(w http.ResponseWriter, r *http.Request) error {
 	idStr, ok := mux.Vars(r)["id"]
+
 	if !ok {
 		return fmt.Errorf("id required to find task")
 

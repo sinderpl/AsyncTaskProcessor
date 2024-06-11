@@ -1,9 +1,11 @@
 package task
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/google/uuid"
+)
 
-// TODO rename this
-type Processing interface {
+type Processor interface {
 	ProcessTask() error
 }
 
@@ -27,7 +29,7 @@ const (
 // CurrentStatus enum describing current state of the task
 type CurrentStatus string
 
-// TODO Maybe simplify these ?
+// TODO simplify ?
 const (
 	ProcessingAwaiting      CurrentStatus = "Awaiting enqueue"
 	ProcessingEnqueued      CurrentStatus = "Enqueued, awaiting processing"
@@ -36,8 +38,8 @@ const (
 	ProcessingFailed        CurrentStatus = "Failed to process"
 )
 
-// TODO sort out inheritance within package
 type Task struct {
+	Id       string
 	Priority ExecutionPriority
 	Type     TypeOf
 	Status   CurrentStatus
@@ -63,6 +65,7 @@ func WithType(typeOf TypeOf) option {
 func CreateTask(opts ...option) (*Task, error) {
 
 	t := &Task{
+		Id:       uuid.New().String(),
 		Priority: Low,
 		Status:   ProcessingAwaiting,
 	}
