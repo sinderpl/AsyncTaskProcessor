@@ -3,9 +3,11 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
+	"github.com/sinderpl/AsyncTaskProcessor/task"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type server struct {
@@ -55,7 +57,7 @@ func (s *server) Run() error {
 		HandleFunc("/tasks/", makeHTTPHandleFunc(s.handleGetTasksInfo)).
 		Methods(http.MethodPost)
 
-	// TODO get tasks by status
+	// TODO get Tasks by status
 
 	http.ListenAndServe(s.listenAddr, router)
 
@@ -68,7 +70,50 @@ func (s *server) handleHealthz(w http.ResponseWriter, r *http.Request) error {
 
 func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error {
 
-	panic("implement me")
+	req := new(EnqueueTaskPayload)
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	resp := EnqueueTaskResponse{
+		Tasks: make([]TaskResponse, 0, len(req.Tasks)),
+	}
+
+	for _, t := range req.Tasks {
+		var tResp TaskResponse
+
+		newTask, err := task.CreateTask(
+			task.WithType(t.TaskType),
+			task.WithCreatedBy("testApiId"),
+			task.WithPriority(t.Priority))
+
+		if newTask == nil || err != nil {
+			tResp = TaskResponse{
+				TaskType: t.TaskType,
+				Priority: t.Priority,
+				Status:   task.ProcessingRejected,
+				Err:      err.Error(),
+			}
+			resp.Tasks = append(resp.Tasks, tResp)
+			continue
+		}
+
+		tResp = TaskResponse{
+			Id:       newTask.Id,
+			TaskType: newTask.Type,
+			Priority: newTask.Priority,
+			Status:   newTask.Status,
+		}
+
+		resp.Tasks = append(resp.Tasks, tResp)
+	}
+	//fmt.Println(resp)
+
+	resp.Status = "Successfully enqueued valid tasks"
+
+	return writeJson(w, http.StatusOK, resp)
 }
 
 func (s *server) handleGetTaskInfo(w http.ResponseWriter, r *http.Request) error {
@@ -106,6 +151,8 @@ func writeJson(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(status)
+
+	fmt.Println(v)
 
 	return json.NewEncoder(w).Encode(v)
 }

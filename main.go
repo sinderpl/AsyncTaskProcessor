@@ -35,7 +35,8 @@ func main() {
 
 	fmt.Println("Hello world")
 
-	server := api.CreateApiServer(api.WithListenAddr(config.Api.ListenAddr))
+	server := api.CreateApiServer(
+		api.WithListenAddr(config.Api.ListenAddr))
 
 	server.Run()
 	fmt.Println("Hello world 2")

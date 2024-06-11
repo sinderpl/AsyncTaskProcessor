@@ -2,8 +2,9 @@ package task
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Processor interface {
@@ -37,6 +38,7 @@ const (
 	ProcessingSuccess       CurrentStatus = " Processed successfully"
 	ProcessingAwaitingRetry CurrentStatus = "Awaiting retry"
 	ProcessingFailed        CurrentStatus = "Failed to process"
+	ProcessingRejected      CurrentStatus = "Rejected"
 )
 
 type Task struct {
@@ -102,6 +104,7 @@ func CreateTask(opts ...option) (*Task, error) {
 }
 
 func (t *Task) validateTask() error {
+	// TODO fix validation
 	if t.Type == "" {
 		return fmt.Errorf("task type must be set")
 	}
