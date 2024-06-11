@@ -67,6 +67,7 @@ func (s *server) handleHealthz(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error {
+
 	panic("implement me")
 }
 

@@ -7,7 +7,7 @@ type Processing interface {
 	ProcessTask() error
 }
 
-// TypeOf  enum describes supported type of report
+// TypeOf enum describing supported type of report
 type TypeOf string
 
 const (
@@ -16,7 +16,7 @@ const (
 	TypeCPUProcess     TypeOf = "CPUProcess"
 )
 
-// ExecutionPriority  enum describes execution priority of the task
+// ExecutionPriority enum describing execution priority of the task
 type ExecutionPriority int
 
 const (
@@ -24,7 +24,7 @@ const (
 	High
 )
 
-// ProcessingStatus enum describes current state of the task
+// CurrentStatus enum describing current state of the task
 type CurrentStatus string
 
 // TODO Maybe simplify these ?
@@ -36,6 +36,7 @@ const (
 	ProcessingFailed        CurrentStatus = "Failed to process"
 )
 
+// TODO sort out inheritance within package
 type Task struct {
 	Priority ExecutionPriority
 	Type     TypeOf
@@ -44,6 +45,21 @@ type Task struct {
 
 type option func(task *Task)
 
+// WithPriority sets tasks processing priority
+func WithPriority(priority ExecutionPriority) option {
+	return func(t *Task) {
+		t.Priority = priority
+	}
+}
+
+// WithType *Required* sets task type
+func WithType(typeOf TypeOf) option {
+	return func(t *Task) {
+		t.Type = typeOf
+	}
+}
+
+// CreateTask creates and validates a task with the supplied options
 func CreateTask(opts ...option) (*Task, error) {
 
 	t := &Task{

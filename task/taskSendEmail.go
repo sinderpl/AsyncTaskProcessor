@@ -1,6 +1,9 @@
 package task
 
-type SendEmailTask struct {
+import "time"
+
+// SendEmail
+type SendEmail struct {
 	Task
 	SendTo   []string `json:"sendTo"`
 	SendFrom string   `json:"sendFrom"`
@@ -8,8 +11,8 @@ type SendEmailTask struct {
 	Body     string   `json:"body"`
 }
 
-func (t *SendEmailTask) ProcessTask() error {
+func (t *SendEmail) ProcessTask() error {
 
-	//TODO implement me
-	panic("implement me")
+	time.Sleep(time.Second * 5)
+	return nil
 }
