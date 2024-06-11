@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -11,9 +12,7 @@ type server struct {
 	listenAddr string
 }
 
-type apiFunc func(http.ResponseWriter, *http.Request) error
-
-type ApiError struct {
+type errorResponse struct {
 	Error string `json:"error"`
 }
 
@@ -37,8 +36,12 @@ func WithListenAddr(addr string) ServerOption {
 	}
 }
 
+// Run starts the serve and listens on the specified port
 func (s *server) Run() error {
 	router := mux.NewRouter()
+
+	router.Handle("/healthz", makeHTTPHandleFunc(s.handleHealthz)).
+		Methods(http.MethodGet)
 
 	router.
 		HandleFunc("/tasks/enqueue", makeHTTPHandleFunc(s.handleTaskEnqueue)).
@@ -48,9 +51,19 @@ func (s *server) Run() error {
 		HandleFunc("/task/{id}", makeHTTPHandleFunc(s.handleGetTaskInfo)).
 		Methods(http.MethodGet)
 
+	router.
+		HandleFunc("/tasks/", makeHTTPHandleFunc(s.handleGetTasksInfo)).
+		Methods(http.MethodPost)
+
+	// TODO get tasks by status
+
 	http.ListenAndServe(s.listenAddr, router)
 
 	return nil
+}
+
+func (s *server) handleHealthz(w http.ResponseWriter, r *http.Request) error {
+	return writeJson(w, http.StatusOK, "service is healthy")
 }
 
 func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error {
@@ -58,20 +71,34 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 }
 
 func (s *server) handleGetTaskInfo(w http.ResponseWriter, r *http.Request) error {
-	panic("implement me")
+	idStr, ok := mux.Vars(r)["id"]
+	if !ok {
+		return fmt.Errorf("id required to find task")
+
+	}
+
+	// TODO hook in persistence
+	return writeJson(w, http.StatusOK, idStr)
 }
 
-func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
+func (s *server) handleGetTasksInfo(w http.ResponseWriter, r *http.Request) error {
+	idStr := r.URL.Query().Get("ids")
+	fmt.Println(idStr)
+
+	return writeJson(w, http.StatusOK, idStr)
+}
+
+func makeHTTPHandleFunc(f func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
-			if err := WriteJson(w, http.StatusBadRequest, ApiError{Error: err.Error()}); err != nil {
+			if err := writeJson(w, http.StatusBadRequest, errorResponse{Error: err.Error()}); err != nil {
 				log.Print(err)
 			}
 		}
 	}
 }
 
-func WriteJson(w http.ResponseWriter, status int, v any) error {
+func writeJson(w http.ResponseWriter, status int, v any) error {
 
 	// Setting headers after w.WriteHeader leads to these being ignored
 	w.Header().Set("Content-Type", "application/json")
