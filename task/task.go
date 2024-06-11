@@ -3,6 +3,7 @@ package task
 import (
 	"fmt"
 	"github.com/google/uuid"
+	"time"
 )
 
 type Processor interface {
@@ -39,10 +40,19 @@ const (
 )
 
 type Task struct {
-	Id       string
-	Priority ExecutionPriority
-	Type     TypeOf
-	Status   CurrentStatus
+	Id         string
+	Priority   ExecutionPriority
+	Type       TypeOf
+	Status     CurrentStatus
+	Error      *error
+	CreatedAt  time.Time
+	CreatedBy  string
+	StartedAt  time.Time
+	FinishedAt time.Time
+
+	// MOCKING Just for simulating running not for prod
+	MockProcessingTime   time.Duration
+	MockProcessingResult CurrentStatus
 }
 
 type option func(task *Task)
@@ -61,14 +71,24 @@ func WithType(typeOf TypeOf) option {
 	}
 }
 
+// WithCreatedBy *Required* sets created by user id
+func WithCreatedBy(id string) option {
+	return func(t *Task) {
+		t.CreatedBy = id
+	}
+}
+
 // CreateTask creates and validates a task with the supplied options
 func CreateTask(opts ...option) (*Task, error) {
 
 	t := &Task{
-		Id:       uuid.New().String(),
-		Priority: Low,
-		Status:   ProcessingAwaiting,
+		Id:        uuid.New().String(),
+		CreatedAt: time.Now().UTC(),
+		Priority:  Low,
+		Status:    ProcessingAwaiting,
 	}
+
+	fmt.Println(t.CreatedAt)
 
 	for _, opt := range opts {
 		opt(t)
@@ -83,8 +103,28 @@ func CreateTask(opts ...option) (*Task, error) {
 
 func (t *Task) validateTask() error {
 	if t.Type == "" {
-		return fmt.Errorf("task type must be specified")
+		return fmt.Errorf("task type must be set")
+	}
+
+	if t.CreatedBy == "" {
+		return fmt.Errorf("creator user id must be set")
 	}
 
 	return nil
+}
+
+// MOCKING Execution
+
+// WithMockProcessingTime *Required* simulates processing time
+func WithMockProcessingTime(ti time.Duration) option {
+	return func(t *Task) {
+		t.MockProcessingTime = ti
+	}
+}
+
+// WithMockProcessingResult *Required* simulates result
+func WithMockProcessingResult(exp CurrentStatus) option {
+	return func(t *Task) {
+		t.MockProcessingResult = exp
+	}
 }

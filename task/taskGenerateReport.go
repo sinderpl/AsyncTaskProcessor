@@ -1,6 +1,9 @@
 package task
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // GenerateReport simulates generating a report
 type GenerateReport struct {
@@ -10,7 +13,8 @@ type GenerateReport struct {
 }
 
 func (t *GenerateReport) ProcessTask() error {
-	time.Sleep(time.Second * 5)
-
+	time.Sleep(t.MockProcessingTime)
+	fmt.Printf("Report : %s generated, notifying %s", t.ReportType, t.Notify)
+	t.Status = t.MockProcessingResult
 	return nil
 }
