@@ -6,8 +6,8 @@ Processes
 ```
 
 TODO
-- [ ] Config
-- [ ] API
+- [x] Config
+- [x] API
 - [ ] Endpoint for enqueue tasks
 - [ ] Endpoint for querying tasks
 - [ ] Generic Task

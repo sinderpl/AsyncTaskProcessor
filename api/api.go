@@ -16,10 +16,10 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
-type ServerOption func(server *server)
+type option func(server *server)
 
 // CreateApiServer creates and returns the server with predefined options
-func CreateApiServer(opts ...ServerOption) *server {
+func CreateApiServer(opts ...option) *server {
 	srv := server{listenAddr: ""}
 
 	for _, opt := range opts {
@@ -30,7 +30,7 @@ func CreateApiServer(opts ...ServerOption) *server {
 }
 
 // WithListenAddr sets the address the server should listen on
-func WithListenAddr(addr string) ServerOption {
+func WithListenAddr(addr string) option {
 	return func(srv *server) {
 		srv.listenAddr = addr
 	}
