@@ -10,12 +10,12 @@ type CPUProcess struct {
 	ProcessType string `json:"processType"`
 }
 
-func (t CPUProcess) ProcessTask() error {
+func (t *CPUProcess) ProcessTask() error {
 	fmt.Printf("CPU process: %s completed \n", t.ProcessType)
 	return nil
 }
 
-func (t CPUProcess) ValidateTask() error {
+func (t *CPUProcess) ValidateTask() error {
 	if t.ProcessType == "" {
 		return errors.New("process type can't be empty")
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO rename ?
+// TODO better name ? :D
 type Processable interface {
 	ProcessTask() error
 	ValidateTask() error

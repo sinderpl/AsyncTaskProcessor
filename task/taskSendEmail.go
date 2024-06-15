@@ -18,7 +18,7 @@ func (t *SendEmail) ProcessTask() error {
 	return nil
 }
 
-func (t SendEmail) ValidateTask() error {
+func (t *SendEmail) ValidateTask() error {
 	if len(t.SendTo) <= 0 {
 		return errors.New("recipients cant be empty")
 	}

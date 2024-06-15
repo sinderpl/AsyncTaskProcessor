@@ -68,13 +68,7 @@ func (s *server) Run() error {
 		HandleFunc("/task/{id}", makeHTTPHandleFunc(s.handleGetTaskInfo)).
 		Methods(http.MethodGet)
 
-	router.
-		HandleFunc("/tasks/", makeHTTPHandleFunc(s.handleGetTasksInfo)).
-		Methods(http.MethodPost)
-
-	// TODO get Tasks by status
-
-	fmt.Println("server ready  and listening for requests")
+	slog.Info("server ready  and listening for requests")
 	http.ListenAndServe(s.listenAddr, router)
 
 	return nil
@@ -167,13 +161,10 @@ func makeHTTPHandleFunc(f func(http.ResponseWriter, *http.Request) error) http.H
 }
 
 func writeJson(w http.ResponseWriter, status int, v any) error {
-
 	// Setting headers after w.WriteHeader leads to these being ignored
 	w.Header().Set("Content-Type", "application/json")
 
 	w.WriteHeader(status)
-
-	fmt.Println(v)
 
 	return json.NewEncoder(w).Encode(v)
 }

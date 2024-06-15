@@ -18,10 +18,11 @@ type Queue struct {
 	workerPoolSize int
 	maxTaskRetry   int
 
-	mainTaskChan  *chan []*task.Task
-	resultChan    chan *task.Task
-	priorityChans []chan task.Task
-	workerPool    *WorkerPool
+	mainTaskChan    *chan []*task.Task
+	resultChan      chan *task.Task
+	priorityChans   []chan task.Task
+	workerPool      *WorkerPool
+	deadLetterQueue []task.Task // TODO this needs management as it will grow forever
 }
 
 // CreateQueue creates and returns the Queue with predefined options
@@ -31,8 +32,10 @@ func CreateQueue(ctx context.Context, opts ...option) (*Queue, error) {
 		maxQueueSize:   100,
 		workerPoolSize: 5,
 		maxTaskRetry:   1,
-		priorityChans:  make([]chan task.Task, 0, 2),
-		resultChan:     make(chan *task.Task),
+
+		priorityChans:   make([]chan task.Task, 0, 2),
+		resultChan:      make(chan *task.Task),
+		deadLetterQueue: make([]task.Task, 0),
 	}
 
 	for _, opt := range opts {
@@ -153,11 +156,11 @@ func (q *Queue) awaitResults() {
 					if t.Retries > q.maxTaskRetry {
 						t.Status = task.ProcessingFailed
 						slog.Error(fmt.Sprintf("error while processing task: %s no retries left, error: %v \n", t.Id, t.Error))
-						// TODO add to deadletter
+						q.deadLetterQueue = append(q.deadLetterQueue, *t)
 						continue
 					}
 					t.Retries++
-					slog.Info(fmt.Sprintf("error while processing task:%s, retrying. retryNum:%d error: %v \n", t.Id, t.Retries, t.Error))
+					slog.Info(fmt.Sprintf("failed: error while processing task:%s, retrying. retryNum:%d error: %v \n", t.Id, t.Retries, t.Error))
 
 					t.Error = nil
 					q.enqueue(t)

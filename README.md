@@ -16,7 +16,7 @@ TODO
 - [ ] Add docker-compose to create persistence through sql
 - [x] Async Processing
 - [x] Error handling, retries
-- [ ] Dead Letter Queue
+- [x] Dead Letter Queue
 - [x] Logging 
 - [ ] Tests
 - [ ] Code Documentation

@@ -55,7 +55,7 @@ func main() {
 
 	server := api.CreateApiServer(
 		api.WithListenAddr(config.Api.ListenAddr),
-		api.WithQueue(&taskChan)) // TODO handle passing this chan to task better
+		api.WithQueue(&taskChan))
 
 	server.Run()
 

@@ -16,7 +16,7 @@ func (t *GenerateReport) ProcessTask() error {
 	return nil
 }
 
-func (t GenerateReport) ValidateTask() error {
+func (t *GenerateReport) ValidateTask() error {
 	if t.ReportType == "" {
 		return errors.New("unsupported report type")
 	}
