@@ -1,0 +1,37 @@
+# curl --location 'http://localhost:3000/tasks/enqueue'
+#--header 'Content-Type: application/json'
+#--data '{
+#    "tasks" : [
+#        {
+#            "taskType" : "SendEmail"
+#
+#        },
+#        {
+#            "taskType" : "GenerateReport",
+#            "priority" : 1
+#        },
+#        {
+#            "taskType" : "HelloWorld",
+#            "priority" : 1
+#        }
+#    ]
+#}'
+POST http://localhost:3000/tasks/enqueue
+Content-Type: application/json
+
+{
+  "tasks": [
+    {
+      "taskType": "SendEmail",
+      "taskData": {}
+    },
+    {
+      "taskType": "GenerateReport",
+      "priority": 1,
+      "taskData": {}
+    }
+    ]
+}
+
+###
+

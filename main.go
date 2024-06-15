@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/sinderpl/AsyncTaskProcessor/api"
 	"log"
 	"os"
@@ -28,17 +27,13 @@ func main() {
 	}
 
 	if err := yaml.Unmarshal(cfgFile, &config); err != nil {
-		log.Fatalf("Failed to unmarshal YAML data: %v", err)
+		log.Fatalf("Failed to unmarshal YAML config data: %v", err)
 	}
-
-	fmt.Println(config.Api.ListenAddr)
-
-	fmt.Println("Hello world")
+	// TODO add main CTX
 
 	server := api.CreateApiServer(
 		api.WithListenAddr(config.Api.ListenAddr))
 
 	server.Run()
-	fmt.Println("Hello world 2")
 
 }

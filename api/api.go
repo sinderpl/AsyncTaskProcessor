@@ -2,13 +2,17 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/sinderpl/AsyncTaskProcessor/task"
 	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
+
+const testUserId = "testUserIdTodo"
 
 type server struct {
 	listenAddr string
@@ -42,6 +46,7 @@ func WithListenAddr(addr string) option {
 func (s *server) Run() error {
 	router := mux.NewRouter()
 
+	// TODO add middleware to validate user / api key
 	router.Handle("/healthz", makeHTTPHandleFunc(s.handleHealthz)).
 		Methods(http.MethodGet)
 
@@ -59,6 +64,7 @@ func (s *server) Run() error {
 
 	// TODO get Tasks by status
 
+	fmt.Println("server ready  and listening for requests")
 	http.ListenAndServe(s.listenAddr, router)
 
 	return nil
@@ -73,8 +79,8 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 	req := new(EnqueueTaskPayload)
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		fmt.Println(err)
-		return err
+		slog.Error("failed to decode request body", err)
+		return errors.New("failed to decode request body")
 	}
 
 	resp := EnqueueTaskResponse{
@@ -86,18 +92,14 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 
 		newTask, err := task.CreateTask(
 			task.WithType(t.TaskType),
-			task.WithCreatedBy("testApiId"),
+			task.WithCreatedBy(testUserId), // TODO add user session validation
 			task.WithPriority(t.Priority))
 
 		if newTask == nil || err != nil {
-			tResp = TaskResponse{
-				TaskType: t.TaskType,
-				Priority: t.Priority,
-				Status:   task.ProcessingRejected,
-				Err:      err.Error(),
-			}
-			resp.Tasks = append(resp.Tasks, tResp)
-			continue
+			return fmt.Errorf("failed to create task. type: %s, priority: %d, validationError: %s",
+				t.TaskType,
+				t.Priority,
+				err)
 		}
 
 		tResp = TaskResponse{
@@ -109,7 +111,6 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 
 		resp.Tasks = append(resp.Tasks, tResp)
 	}
-	//fmt.Println(resp)
 
 	resp.Status = "Successfully enqueued valid tasks"
 
@@ -138,6 +139,7 @@ func (s *server) handleGetTasksInfo(w http.ResponseWriter, r *http.Request) erro
 func makeHTTPHandleFunc(f func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
+			// TODO extend these to provide better http codes from function returns
 			if err := writeJson(w, http.StatusBadRequest, errorResponse{Error: err.Error()}); err != nil {
 				log.Print(err)
 			}

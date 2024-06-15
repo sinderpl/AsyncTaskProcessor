@@ -14,11 +14,22 @@ type Processor interface {
 // TypeOf enum describing supported type of report
 type TypeOf string
 
+// TODO perhaps find a better way to extend these enums
+// If updating make sure to update the isValidTypeOf function
 const (
 	TypeSendEmail      TypeOf = "SendEmail"
 	TypeGenerateReport TypeOf = "GenerateReport"
 	TypeCPUProcess     TypeOf = "CPUProcess"
 )
+
+func isValidTypeOf(typeOf TypeOf) bool {
+	// Unfortunate workaround due to lack of enums in GO
+	switch typeOf {
+	case TypeSendEmail, TypeGenerateReport, TypeCPUProcess:
+		return true
+	}
+	return false
+}
 
 // ExecutionPriority enum describing execution priority of the task
 type ExecutionPriority int
@@ -31,11 +42,10 @@ const (
 // CurrentStatus enum describing current state of the task
 type CurrentStatus string
 
-// TODO simplify ?
 const (
 	ProcessingAwaiting      CurrentStatus = "Awaiting enqueue"
 	ProcessingEnqueued      CurrentStatus = "Enqueued, awaiting processing"
-	ProcessingSuccess       CurrentStatus = " Processed successfully"
+	ProcessingSuccess       CurrentStatus = "Processed successfully"
 	ProcessingAwaitingRetry CurrentStatus = "Awaiting retry"
 	ProcessingFailed        CurrentStatus = "Failed to process"
 	ProcessingRejected      CurrentStatus = "Rejected"
@@ -104,9 +114,12 @@ func CreateTask(opts ...option) (*Task, error) {
 }
 
 func (t *Task) validateTask() error {
-	// TODO fix validation
 	if t.Type == "" {
 		return fmt.Errorf("task type must be set")
+	}
+
+	if !isValidTypeOf(t.Type) {
+		return fmt.Errorf("unsupported task type")
 	}
 
 	if t.CreatedBy == "" {
