@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// TODO rename ?
 type Processor interface {
 	ProcessTask() error
 	ValidateTask() error

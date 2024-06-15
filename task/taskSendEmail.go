@@ -6,7 +6,7 @@ import (
 
 // SendEmail simulates sending a email
 type SendEmail struct {
-	//Task
+	Task
 	SendTo   []string `json:"sendTo"`
 	SendFrom string   `json:"sendFrom"`
 	Subject  string   `json:"subject"`

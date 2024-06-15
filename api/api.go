@@ -16,10 +16,13 @@ const testUserId = "testUserIdTodo"
 
 type server struct {
 	listenAddr string
+	taskChan   *chan []task.Task
 }
 
 type errorResponse struct {
-	Error string `json:"error"`
+	Priority task.ExecutionPriority `json:"priority,omitempty"`
+	TaskType task.TypeOf            `json:"taskType,omitempty"`
+	Error    string                 `json:"error" json:"error"`
 }
 
 type option func(server *server)
@@ -35,10 +38,17 @@ func CreateApiServer(opts ...option) *server {
 	return &srv
 }
 
-// WithListenAddr sets the address the server should listen on
+// WithListenAddr *required* sets the address the server should listen on
 func WithListenAddr(addr string) option {
 	return func(srv *server) {
 		srv.listenAddr = addr
+	}
+}
+
+// WithQueue *required* the queue will listen to new tasks on this chan
+func WithQueue(taskChan *chan []task.Task) option {
+	return func(q *server) {
+		q.taskChan = taskChan
 	}
 }
 
@@ -97,10 +107,12 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 			task.WithPayload(t.Payload))
 
 		if newTask == nil || err != nil {
-			return fmt.Errorf("failed to create task. type: %s, priority: %d, validationError: %s",
-				t.TaskType,
-				t.Priority,
-				err)
+			resp := errorResponse{
+				Priority: t.Priority,
+				TaskType: t.TaskType,
+				Error:    "failed to create task",
+			}
+			return writeJson(w, http.StatusBadRequest, resp)
 		}
 
 		tResp = TaskResponse{
