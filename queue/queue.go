@@ -100,6 +100,8 @@ func (q *Queue) enqueue(tasks ...*task.Task) {
 
 	for _, t := range tasks {
 		t.Status = task.ProcessingEnqueued
+		slog.Info(fmt.Sprintf("enqueing task %s", t.Id))
+
 		switch t.Priority {
 		case task.High:
 			q.priorityChans[0] <- *t
@@ -150,19 +152,21 @@ func (q *Queue) awaitResults() {
 				if t.Error != nil {
 					if t.Retries > q.maxTaskRetry {
 						t.Status = task.ProcessingFailed
+						slog.Error(fmt.Sprintf("error while processing task: %s no retries left, error: %v \n", t.Id, t.Error))
 						// TODO add to deadletter
 						continue
 					}
 					t.Retries++
-					slog.Error(fmt.Sprintf("error while processing task %s retryNum:%d error: %v \n", t.Id, t.Retries, t.Error))
+					slog.Info(fmt.Sprintf("error while processing task:%s, retrying. retryNum:%d error: %v \n", t.Id, t.Retries, t.Error))
 
 					t.Error = nil
 					q.enqueue(t)
+					continue
 				}
 
 				t.Status = task.ProcessingSuccess
 				t.FinishedAt = time.Now()
-
+				slog.Info(fmt.Sprintf("task:%s processed succesfully \n", t.Id))
 			}
 		}
 	}()

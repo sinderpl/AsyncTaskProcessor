@@ -14,10 +14,10 @@ TODO
 - [ ] Queue Management
 - [ ] Queue prioritisation (avoid starvation)
 - [ ] Add docker-compose to create persistence through sql
-- [ ] Async Processing
-- [ ] Error handling, retries
+- [x] Async Processing
+- [x] Error handling, retries
 - [ ] Dead Letter Queue
-- [ ] Logging 
+- [x] Logging 
 - [ ] Tests
 - [ ] Code Documentation
 - [ ] System Documentation
