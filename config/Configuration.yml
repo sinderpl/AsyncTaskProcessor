@@ -2,3 +2,4 @@ api:
   listenAddr : ':3000'
 queue:
   maxQueueSize: 100
+  workerPoolSize: 10

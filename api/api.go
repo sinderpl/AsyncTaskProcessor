@@ -16,7 +16,7 @@ const testUserId = "testUserIdTodo"
 
 type server struct {
 	listenAddr string
-	taskChan   *chan []task.Task
+	taskChan   *chan []*task.Task
 }
 
 type errorResponse struct {
@@ -46,7 +46,7 @@ func WithListenAddr(addr string) option {
 }
 
 // WithQueue *required* the queue will listen to new tasks on this chan
-func WithQueue(taskChan *chan []task.Task) option {
+func WithQueue(taskChan *chan []*task.Task) option {
 	return func(q *server) {
 		q.taskChan = taskChan
 	}
@@ -97,7 +97,7 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 		Tasks: make([]TaskResponse, 0, len(req.Tasks)),
 	}
 
-	newTasks := make([]task.Task, 0, len(req.Tasks))
+	newTasks := make([]*task.Task, 0, len(req.Tasks))
 
 	for _, t := range req.Tasks {
 		var tResp TaskResponse
@@ -124,7 +124,7 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 			Status:   newTask.Status,
 		}
 
-		newTasks = append(newTasks, *newTask)
+		newTasks = append(newTasks, newTask)
 		resp.Tasks = append(resp.Tasks, tResp)
 	}
 

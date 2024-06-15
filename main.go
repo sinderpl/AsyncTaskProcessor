@@ -1,14 +1,13 @@
 package main
 
 import (
+	"context"
+	"github.com/sinderpl/AsyncTaskProcessor/api"
 	"github.com/sinderpl/AsyncTaskProcessor/queue"
+	"github.com/sinderpl/AsyncTaskProcessor/task"
+	"gopkg.in/yaml.v2"
 	"log"
 	"os"
-
-	"github.com/sinderpl/AsyncTaskProcessor/api"
-	"github.com/sinderpl/AsyncTaskProcessor/task"
-
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -21,7 +20,8 @@ type Config struct {
 		ListenAddr string `yaml:"listenAddr"`
 	} `yaml:"api"`
 	Queue struct {
-		maxQueueSize int32 `yaml:"maxQueueSize"`
+		maxQueueSize   int `yaml:"maxQueueSize" json:"maxQueueSize,omitempty"`
+		workerPoolSize int `json:"workerPoolSize,omitempty"`
 	} `yaml:"queue"`
 }
 
@@ -36,13 +36,29 @@ func main() {
 		log.Fatalf("Failed to unmarshal YAML config data: %v", err)
 	}
 
+	mainCtx := context.Background()
+	taskChan := make(chan []*task.Task)
+
+	//stopChan := make(chan os.Signal, 2)
+	//signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	//
+	//go func() {
+	//	<-stopChan
+	//	slog.Info("os exit signal called, shutting down")
+	//	close(taskChan)
+	//	mainCtx.Done()
+	//}()
+
 	// TODO add main CTX
 
-	taskChan := make(chan []task.Task)
-
-	q := queue.CreateQueue(
+	q, err := queue.CreateQueue(mainCtx,
 		queue.WithMainQueue(&taskChan),
-		queue.WithMaxQueueSize(config.Queue.maxQueueSize))
+		queue.WithMaxQueueSize(config.Queue.maxQueueSize),
+		queue.WithMaxWorkerPoolSize(config.Queue.maxQueueSize))
+
+	if err != nil {
+		log.Fatalf("failed to initialize queue: %v", err)
+	}
 
 	q.Start()
 
