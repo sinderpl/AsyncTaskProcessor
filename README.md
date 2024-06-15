@@ -8,9 +8,9 @@ Processes
 TODO
 - [x] Config
 - [x] API
-- [ ] Endpoint for enqueue tasks
+- [x] Endpoint for enqueue tasks
 - [ ] Endpoint for querying tasks
-- [ ] Generic Task
+- [x] Generic Task
 - [ ] Queue Management
 - [ ] Queue prioritisation (avoid starvation)
 - [ ] Add docker-compose to create persistence through sql

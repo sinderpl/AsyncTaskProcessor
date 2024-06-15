@@ -70,10 +70,6 @@ type Task struct {
 	FinishedAt time.Time
 
 	Error *error
-
-	// MOCKING Just for simulating running not for prod
-	MockProcessingTime   time.Duration
-	MockProcessingResult CurrentStatus
 }
 
 type option func(task *Task)
@@ -177,20 +173,4 @@ func (t *Task) parseTaskType() (Processable, error) {
 	}
 
 	return payload.(Processable), nil
-}
-
-// MOCKING Execution
-
-// WithMockProcessingTime *Required* simulates processing time
-func WithMockProcessingTime(ti time.Duration) option {
-	return func(t *Task) {
-		t.MockProcessingTime = ti
-	}
-}
-
-// WithMockProcessingResult *Required* simulates result
-func WithMockProcessingResult(exp CurrentStatus) option {
-	return func(t *Task) {
-		t.MockProcessingResult = exp
-	}
 }

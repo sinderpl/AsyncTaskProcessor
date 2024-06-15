@@ -3,19 +3,15 @@ package task
 import (
 	"errors"
 	"fmt"
-	"time"
 )
 
 // CPUProcess simulates CPU processing time
 type CPUProcess struct {
-	Task
 	ProcessType string `json:"processType"`
 }
 
 func (t CPUProcess) ProcessTask() error {
-	time.Sleep(t.MockProcessingTime)
-	fmt.Printf("CPU process: %s completed, took %s", t.ProcessType, t.MockProcessingTime)
-	t.Status = t.MockProcessingResult
+	fmt.Printf("CPU process: %s completed", t.ProcessType)
 	return nil
 }
 

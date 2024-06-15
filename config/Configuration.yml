@@ -1,2 +1,4 @@
 api:
   listenAddr : ':3000'
+queue:
+  maxQueueSize: 100

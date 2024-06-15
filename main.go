@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/sinderpl/AsyncTaskProcessor/queue"
 	"log"
 	"os"
 
@@ -19,6 +20,9 @@ type Config struct {
 	Api struct {
 		ListenAddr string `yaml:"listenAddr"`
 	} `yaml:"api"`
+	Queue struct {
+		maxQueueSize int32 `yaml:"maxQueueSize"`
+	} `yaml:"queue"`
 }
 
 func main() {
@@ -36,10 +40,11 @@ func main() {
 
 	taskChan := make(chan []task.Task)
 
-	//q := queue.CreateQueue(
-	//	queue.WithQueue(&taskChan))
-	//
-	//q.Start()
+	q := queue.CreateQueue(
+		queue.WithMainQueue(&taskChan),
+		queue.WithMaxQueueSize(config.Queue.maxQueueSize))
+
+	q.Start()
 
 	server := api.CreateApiServer(
 		api.WithListenAddr(config.Api.ListenAddr),
