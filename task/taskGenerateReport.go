@@ -8,8 +8,8 @@ import (
 // GenerateReport simulates generating a report
 type GenerateReport struct {
 	Task
-	Notify     []string
-	ReportType string `json:"sendTo"`
+	Notify     []string `json:"notify"`
+	ReportType string   `json:"reportType" json:"reportType"`
 }
 
 func (t *GenerateReport) ProcessTask() error {

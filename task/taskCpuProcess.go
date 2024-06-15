@@ -8,7 +8,7 @@ import (
 // CPUProcess simulates CPU processing time
 type CPUProcess struct {
 	Task
-	ProcessType string
+	ProcessType string `json:"processType"`
 }
 
 func (t CPUProcess) ProcessTask() error {

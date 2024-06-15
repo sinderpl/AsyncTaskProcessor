@@ -20,17 +20,31 @@ POST http://localhost:3000/tasks/enqueue
 Content-Type: application/json
 
 {
-  "tasks": [
+  "tasks" : [
     {
-      "taskType": "SendEmail",
-      "taskData": {}
+      "taskType" : "SendEmail",
+      "payload": {
+        "sendTo" : ["helloworld@test.com", "helloWorld2@test.com"],
+        "sendFrom": "hello1@test.com",
+        "subject" : "Hi !",
+        "body" : "hope you are well"
+      }
     },
-    {
-      "taskType": "GenerateReport",
-      "priority": 1,
-      "taskData": {}
-    }
-    ]
+     {
+         "taskType" : "GenerateReport",
+         "priority" : 1,
+         "payload" : {
+                 "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
+                 "reportType" : "Financial Report"
+
+         }
+     }
+//    ,
+//     {
+//         "taskType" : "HelloWorld",
+//         "priority" : 1
+//     }
+  ]
 }
 
 ###

@@ -93,7 +93,8 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 		newTask, err := task.CreateTask(
 			task.WithType(t.TaskType),
 			task.WithCreatedBy(testUserId), // TODO add user session validation
-			task.WithPriority(t.Priority))
+			task.WithPriority(t.Priority),
+			task.WithPayload(t.Payload))
 
 		if newTask == nil || err != nil {
 			return fmt.Errorf("failed to create task. type: %s, priority: %d, validationError: %s",

@@ -1,6 +1,8 @@
 package task
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,6 +11,7 @@ import (
 
 type Processor interface {
 	ProcessTask() error
+	ValidateTask() error
 }
 
 // TypeOf enum describing supported type of report
@@ -52,15 +55,19 @@ const (
 )
 
 type Task struct {
-	Id         string
-	Priority   ExecutionPriority
-	Type       TypeOf
-	Status     CurrentStatus
-	Error      *error
-	CreatedAt  time.Time
-	CreatedBy  string
+	Id       string
+	Priority ExecutionPriority
+	Type     TypeOf
+	Status   CurrentStatus
+	Payload  json.RawMessage
+
+	CreatedAt time.Time
+	CreatedBy string
+
 	StartedAt  time.Time
 	FinishedAt time.Time
+
+	Error *error
 
 	// MOCKING Just for simulating running not for prod
 	MockProcessingTime   time.Duration
@@ -90,7 +97,14 @@ func WithCreatedBy(id string) option {
 	}
 }
 
-// CreateTask creates and validates a task with the supplied options
+// WithPayload sets created by user id
+func WithPayload(payload json.RawMessage) option {
+	return func(t *Task) {
+		t.Payload = payload
+	}
+}
+
+// CreateTask creates and validates a task with the supplied options and converts the data to the concrete implementation
 func CreateTask(opts ...option) (*Task, error) {
 
 	t := &Task{
@@ -110,6 +124,10 @@ func CreateTask(opts ...option) (*Task, error) {
 		return nil, err
 	}
 
+	if err := t.parseTaskType(); err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -124,6 +142,28 @@ func (t *Task) validateTask() error {
 
 	if t.CreatedBy == "" {
 		return fmt.Errorf("creator user id must be set")
+	}
+
+	return nil
+}
+
+func (t *Task) parseTaskType() error {
+	var payload interface{}
+
+	switch t.Type {
+	case TypeSendEmail:
+		payload = new(SendEmail)
+	case TypeGenerateReport:
+		payload = new(GenerateReport)
+	case TypeCPUProcess:
+		payload = new(CPUProcess)
+	default:
+		return errors.New("unsupported data type")
+	}
+
+	err := json.Unmarshal(t.Payload, payload)
+	if err != nil {
+		return errors.New("failed to unmarshal task data payload")
 	}
 
 	return nil

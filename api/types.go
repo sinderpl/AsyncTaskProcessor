@@ -1,11 +1,16 @@
 package api
 
-import "github.com/sinderpl/AsyncTaskProcessor/task"
+import (
+	"encoding/json"
+
+	"github.com/sinderpl/AsyncTaskProcessor/task"
+)
 
 type EnqueueTaskPayload struct {
 	Tasks []struct {
 		TaskType task.TypeOf            `json:"taskType"`
 		Priority task.ExecutionPriority `json:"priority,omitempty"`
+		Payload  json.RawMessage        `json:"payload,omitempty"`
 	} `json:"Tasks"`
 }
 

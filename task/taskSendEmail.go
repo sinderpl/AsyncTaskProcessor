@@ -2,12 +2,11 @@ package task
 
 import (
 	"fmt"
-	"time"
 )
 
 // SendEmail simulates sending a email
 type SendEmail struct {
-	Task
+	//Task
 	SendTo   []string `json:"sendTo"`
 	SendFrom string   `json:"sendFrom"`
 	Subject  string   `json:"subject"`
@@ -15,8 +14,8 @@ type SendEmail struct {
 }
 
 func (t *SendEmail) ProcessTask() error {
-	time.Sleep(t.MockProcessingTime)
+	//time.Sleep(t.MockProcessingTime)
 	fmt.Printf("Email sent from : %s to : %s , subject: %s", t.SendFrom, t.SendTo, t.Subject)
-	t.Status = t.MockProcessingResult
+	//t.Status = t.MockProcessingResult
 	return nil
 }
