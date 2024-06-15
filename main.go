@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/sinderpl/AsyncTaskProcessor/api"
-	"github.com/sinderpl/AsyncTaskProcessor/queue"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
 
 	"gopkg.in/yaml.v2"
@@ -37,10 +36,10 @@ func main() {
 
 	taskChan := make(chan []task.Task)
 
-	q := queue.CreateQueue(
-		queue.WithQueue(&taskChan))
-
-	q.Start()
+	//q := queue.CreateQueue(
+	//	queue.WithQueue(&taskChan))
+	//
+	//q.Start()
 
 	server := api.CreateApiServer(
 		api.WithListenAddr(config.Api.ListenAddr),

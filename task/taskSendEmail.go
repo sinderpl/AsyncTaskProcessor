@@ -1,6 +1,7 @@
 package task
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -17,5 +18,21 @@ func (t *SendEmail) ProcessTask() error {
 	//time.Sleep(t.MockProcessingTime)
 	fmt.Printf("Email sent from : %s to : %s , subject: %s", t.SendFrom, t.SendTo, t.Subject)
 	//t.Status = t.MockProcessingResult
+	return nil
+}
+
+func (t SendEmail) ValidateTask() error {
+	if len(t.SendTo) <= 0 {
+		return errors.New("recipients cant be empty")
+	}
+
+	if t.SendFrom == "" {
+		return errors.New("sender cant be empty")
+	}
+
+	if t.Subject == "" {
+		return errors.New("subject cant be empty")
+	}
+
 	return nil
 }

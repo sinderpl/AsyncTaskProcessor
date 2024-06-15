@@ -2,19 +2,15 @@ package queue
 
 import (
 	"fmt"
-	"github.com/sinderpl/AsyncTaskProcessor/task"
 	"log/slog"
+
+	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
 
 type option func(q *Queue)
 
 type Queue struct {
 	taskChan *chan []task.Task
-}
-
-func (q *Queue) Enqueue(t *task.Task) error {
-
-	return nil
 }
 
 // Start the queue starts listening to new tasks coming in
@@ -29,8 +25,7 @@ func (q *Queue) Start() {
 					//panic("reading from empty chanel")
 					return
 				}
-				fmt.Println("reading from tasks !!")
-				fmt.Println(tasks)
+				q.enqueue(tasks)
 			}
 		}
 	}()
@@ -52,4 +47,13 @@ func WithQueue(taskChan *chan []task.Task) option {
 	return func(q *Queue) {
 		q.taskChan = taskChan
 	}
+}
+
+func (q *Queue) enqueue(tasks []task.Task) error {
+
+	for _, t := range tasks {
+		fmt.Printf("enqueing: %v", t)
+	}
+
+	return nil
 }

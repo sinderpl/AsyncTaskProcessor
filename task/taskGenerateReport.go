@@ -1,6 +1,7 @@
 package task
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -16,5 +17,12 @@ func (t *GenerateReport) ProcessTask() error {
 	time.Sleep(t.MockProcessingTime)
 	fmt.Printf("Report : %s generated, notifying %s", t.ReportType, t.Notify)
 	t.Status = t.MockProcessingResult
+	return nil
+}
+
+func (t GenerateReport) ValidateTask() error {
+	if t.ReportType == "" {
+		return errors.New("unsupported report type")
+	}
 	return nil
 }

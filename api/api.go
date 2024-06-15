@@ -97,6 +97,8 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 		Tasks: make([]TaskResponse, 0, len(req.Tasks)),
 	}
 
+	newTasks := make([]task.Task, 0, len(req.Tasks))
+
 	for _, t := range req.Tasks {
 		var tResp TaskResponse
 
@@ -122,8 +124,12 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 			Status:   newTask.Status,
 		}
 
+		newTasks = append(newTasks, *newTask)
 		resp.Tasks = append(resp.Tasks, tResp)
 	}
+
+	// Write tasks to queue so it can distribute and begin processing
+	//*s.taskChan <- newTasks
 
 	resp.Status = "Successfully enqueued valid tasks"
 

@@ -10,7 +10,7 @@ import (
 )
 
 // TODO rename ?
-type Processor interface {
+type Processable interface {
 	ProcessTask() error
 	ValidateTask() error
 }
@@ -56,11 +56,12 @@ const (
 )
 
 type Task struct {
-	Id       string
-	Priority ExecutionPriority
-	Type     TypeOf
-	Status   CurrentStatus
-	Payload  json.RawMessage
+	Id              string
+	Priority        ExecutionPriority
+	Type            TypeOf
+	Status          CurrentStatus
+	Payload         json.RawMessage
+	ProcessableTask Processable
 
 	CreatedAt time.Time
 	CreatedBy string
@@ -125,8 +126,16 @@ func CreateTask(opts ...option) (*Task, error) {
 		return nil, err
 	}
 
-	if err := t.parseTaskType(); err != nil {
+	process, err := t.parseTaskType()
+
+	fmt.Println(process)
+
+	if err != nil {
 		return nil, err
+	}
+
+	if err := process.ValidateTask(); err != nil {
+		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
 	return t, nil
@@ -148,7 +157,7 @@ func (t *Task) validateTask() error {
 	return nil
 }
 
-func (t *Task) parseTaskType() error {
+func (t *Task) parseTaskType() (Processable, error) {
 	var payload interface{}
 
 	switch t.Type {
@@ -159,15 +168,15 @@ func (t *Task) parseTaskType() error {
 	case TypeCPUProcess:
 		payload = new(CPUProcess)
 	default:
-		return errors.New("unsupported data type")
+		return nil, errors.New("unsupported data type")
 	}
 
 	err := json.Unmarshal(t.Payload, payload)
 	if err != nil {
-		return errors.New("failed to unmarshal task data payload")
+		return nil, errors.New("failed to unmarshal task data payload")
 	}
 
-	return nil
+	return payload.(Processable), nil
 }
 
 // MOCKING Execution

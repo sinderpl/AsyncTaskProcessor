@@ -30,20 +30,14 @@ Content-Type: application/json
         "body" : "hope you are well"
       }
     },
-     {
-         "taskType" : "GenerateReport",
-         "priority" : 1,
-         "payload" : {
-                 "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
-                 "reportType" : "Financial Report"
-
-         }
-     }
-//    ,
-//     {
-//         "taskType" : "HelloWorld",
-//         "priority" : 1
-//     }
+    {
+      "taskType" : "GenerateReport",
+      "priority" : 1,
+      "payload" : {
+        "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
+        "reportType" : "Financial Report"
+      }
+    }
   ]
 }
 
