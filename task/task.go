@@ -116,27 +116,27 @@ func CreateTask(opts ...option) (*Task, error) {
 		Status:    ProcessingAwaiting,
 	}
 
-	fmt.Println(t.CreatedAt)
-
 	for _, opt := range opts {
 		opt(t)
 	}
 
 	if err := t.validateTask(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("task validation failed: %v", err)
 	}
 
 	process, err := t.parseTaskType()
-
-	fmt.Println(process)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("task parsing failed: %v", err)
 	}
 
 	if err := process.ValidateTask(); err != nil {
-		return nil, fmt.Errorf("validation error: %v", err)
+		return nil, fmt.Errorf(" task payload validation failed: %v", err)
 	}
+
+	// TODO The composition here could be improved
+	// Assign parsed task and remove the raw payload
+	t.ProcessableTask = process
+	t.Payload = nil
 
 	return t, nil
 }

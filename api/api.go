@@ -112,7 +112,7 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 			resp := errorResponse{
 				Priority: t.Priority,
 				TaskType: t.TaskType,
-				Error:    "failed to create task",
+				Error:    fmt.Sprintf("failed to create task: %v", err),
 			}
 			return writeJson(w, http.StatusBadRequest, resp)
 		}
@@ -129,7 +129,7 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 	}
 
 	// Write tasks to queue so it can distribute and begin processing
-	//*s.taskChan <- newTasks
+	*s.taskChan <- newTasks
 
 	resp.Status = "Successfully enqueued valid tasks"
 
