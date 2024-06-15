@@ -12,7 +12,7 @@ type GenerateReport struct {
 }
 
 func (t *GenerateReport) ProcessTask() error {
-	fmt.Printf("Report : %s generated, notifying %s", t.ReportType, t.Notify)
+	fmt.Printf("Report : %s generated, notifying %s \n", t.ReportType, t.Notify)
 	return nil
 }
 

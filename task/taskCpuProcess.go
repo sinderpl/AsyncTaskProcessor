@@ -11,7 +11,7 @@ type CPUProcess struct {
 }
 
 func (t CPUProcess) ProcessTask() error {
-	fmt.Printf("CPU process: %s completed", t.ProcessType)
+	fmt.Printf("CPU process: %s completed \n", t.ProcessType)
 	return nil
 }
 

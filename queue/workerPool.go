@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
 	"log/slog"
@@ -28,11 +29,12 @@ func (w worker) Start(channels ...chan task.Task) {
 		for {
 			// TODO how to prioritise different channels
 			select {
-			case task := <-channels[0]:
+			case t := <-channels[0]:
 				w.IsProcessing = true
-				slog.Info("worker %s is processing task: %s with priority: %d", w.Id, task.Id, task.Priority)
-				err := task.ProcessableTask.ProcessTask()
+				slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, t.Id, t.Priority))
+				err := t.ProcessableTask.ProcessTask()
 				if err != nil {
+					t.Status = task.ProcessingAwaitingRetry
 					w.IsProcessing = false
 
 				}
@@ -40,7 +42,7 @@ func (w worker) Start(channels ...chan task.Task) {
 				w.IsProcessing = false
 			case task := <-channels[1]:
 				w.IsProcessing = true
-				slog.Info("worker %s is processing task: %s with priority: %d", w.Id, task.Id, task.Priority)
+				slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, task.Id, task.Priority))
 				err := task.ProcessableTask.ProcessTask()
 				if err != nil {
 
@@ -51,6 +53,10 @@ func (w worker) Start(channels ...chan task.Task) {
 			}
 		}
 	}()
+}
+
+func (w worker) process(t *task.Task) {
+
 }
 
 func CreateWorkerPool(numWorkers int, chans ...chan task.Task) *WorkerPool {

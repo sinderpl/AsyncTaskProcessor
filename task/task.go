@@ -52,7 +52,6 @@ const (
 	ProcessingSuccess       CurrentStatus = "Processed successfully"
 	ProcessingAwaitingRetry CurrentStatus = "Awaiting retry"
 	ProcessingFailed        CurrentStatus = "Failed to process"
-	ProcessingRejected      CurrentStatus = "Rejected"
 )
 
 type Task struct {
@@ -66,10 +65,12 @@ type Task struct {
 	CreatedAt time.Time
 	CreatedBy string
 
+	// TODO add a running log
 	StartedAt  time.Time
 	FinishedAt time.Time
 
-	Error *error
+	Retries int
+	Error   *error
 }
 
 type option func(task *Task)

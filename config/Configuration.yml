@@ -3,3 +3,4 @@ api:
 queue:
   maxQueueSize: 100
   workerPoolSize: 10
+  maxTaskRetry: 3

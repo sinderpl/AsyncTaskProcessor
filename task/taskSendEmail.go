@@ -14,7 +14,7 @@ type SendEmail struct {
 }
 
 func (t *SendEmail) ProcessTask() error {
-	fmt.Printf("Email sent from : %s to : %s , subject: %s", t.SendFrom, t.SendTo, t.Subject)
+	fmt.Printf("Email sent from : %s to : %s , subject: %s \n", t.SendFrom, t.SendTo, t.Subject)
 	return nil
 }
 

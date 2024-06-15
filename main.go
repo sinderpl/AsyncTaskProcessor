@@ -20,8 +20,9 @@ type Config struct {
 		ListenAddr string `yaml:"listenAddr"`
 	} `yaml:"api"`
 	Queue struct {
-		maxQueueSize   int `yaml:"maxQueueSize" json:"maxQueueSize,omitempty"`
-		workerPoolSize int `json:"workerPoolSize,omitempty"`
+		maxQueueSize   int `yaml:"maxQueueSize"`
+		workerPoolSize int `yaml:"workerPoolSize,omitempty"`
+		maxTaskRetry   int `yaml:"maxTaskRetry"`
 	} `yaml:"queue"`
 }
 
@@ -36,25 +37,15 @@ func main() {
 		log.Fatalf("Failed to unmarshal YAML config data: %v", err)
 	}
 
+	// TODO graceful shutdown
 	mainCtx := context.Background()
 	taskChan := make(chan []*task.Task)
-
-	//stopChan := make(chan os.Signal, 2)
-	//signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
-	//
-	//go func() {
-	//	<-stopChan
-	//	slog.Info("os exit signal called, shutting down")
-	//	close(taskChan)
-	//	mainCtx.Done()
-	//}()
-
-	// TODO add main CTX
 
 	q, err := queue.CreateQueue(mainCtx,
 		queue.WithMainQueue(&taskChan),
 		queue.WithMaxQueueSize(config.Queue.maxQueueSize),
-		queue.WithMaxWorkerPoolSize(config.Queue.maxQueueSize))
+		queue.WithMaxWorkerPoolSize(config.Queue.maxQueueSize),
+		queue.WithMaxTaskRetry(config.Queue.maxTaskRetry))
 
 	if err != nil {
 		log.Fatalf("failed to initialize queue: %v", err)
