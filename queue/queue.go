@@ -1,6 +1,10 @@
 package queue
 
-import "github.com/sinderpl/AsyncTaskProcessor/task"
+import (
+	"fmt"
+	"github.com/sinderpl/AsyncTaskProcessor/task"
+	"log/slog"
+)
 
 type option func(q *Queue)
 
@@ -15,11 +19,21 @@ func (q *Queue) Enqueue(t *task.Task) error {
 
 // Start the queue starts listening to new tasks coming in
 func (q *Queue) Start() {
-	//go func() {
-	//	for {
-	//
-	//	}
-	//}()
+	go func() {
+		slog.Info("queue has started listening")
+		for {
+			select {
+			case tasks, ok := <-*q.taskChan:
+				if !ok {
+					slog.Error("reading from empty chane")
+					//panic("reading from empty chanel")
+					return
+				}
+				fmt.Println("reading from tasks !!")
+				fmt.Println(tasks)
+			}
+		}
+	}()
 }
 
 // CreateQueue creates and returns the Queue with predefined options
