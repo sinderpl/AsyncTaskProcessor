@@ -1,0 +1,49 @@
+{
+  "tasks" : [
+    {
+      "taskType" : "SendEmail",
+      "payload": {
+        "sendTo" : ["helloworld@test.com", "helloWorld2@test.com"],
+        "sendFrom": "hello1@test.com",
+        "subject" : "Hi !",
+        "body" : "hope you are well"
+      }
+    },
+    {
+      "taskType" : "GenerateReport",
+      "priority" : 1,
+      "payload" : {
+        "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
+        "reportType" : "Financial Report"
+      }
+    },
+    {
+      "taskType" : "GenerateReport",
+      "priority" : 1,
+      "payload" : {
+        "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
+        "reportType" : "Absence Report"
+      }
+    },
+    {
+      "taskType" : "GenerateReport",
+      "priority" : 1,
+      "payload" : {
+        "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
+        "reportType" : "Time Report"
+      }
+    },
+    {
+      "taskType": "SendEmail",
+      "payload": {
+        "sendTo": [
+          "helloworld@test.com",
+          "helloWorld2@test.com"
+        ],
+        "sendFrom": "hello1@test.com",
+        "subject": "Enquiry about availability",
+        "body": "hope you are well"
+      }
+    }
+  ]
+}

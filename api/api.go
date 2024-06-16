@@ -98,6 +98,7 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 
 		newTask, err := task.CreateTask(
 			task.WithType(t.TaskType),
+			task.WithBackoffTime(t.BackOffDuration),
 			task.WithCreatedBy(testUserId), // TODO add user session validation
 			task.WithPriority(t.Priority),
 			task.WithPayload(t.Payload))

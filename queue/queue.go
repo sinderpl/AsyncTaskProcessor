@@ -14,7 +14,7 @@ type option func(q *Queue)
 
 type Queue struct {
 	ctx            context.Context
-	maxQueueSize   int
+	maxBufferSize  int
 	workerPoolSize int
 	maxTaskRetry   int
 
@@ -22,6 +22,7 @@ type Queue struct {
 	resultChan      chan *task.Task
 	priorityChans   []chan task.Task
 	workerPool      *WorkerPool
+	awaitingEnqueue []*task.Task
 	deadLetterQueue []task.Task // TODO this needs management as it will grow forever
 }
 
@@ -29,9 +30,9 @@ type Queue struct {
 func CreateQueue(ctx context.Context, opts ...option) (*Queue, error) {
 	q := Queue{
 		ctx:            ctx,
-		maxQueueSize:   100,
+		maxBufferSize:  5,
 		workerPoolSize: 5,
-		maxTaskRetry:   1,
+		maxTaskRetry:   0,
 
 		priorityChans:   make([]chan task.Task, 0, 2),
 		resultChan:      make(chan *task.Task),
@@ -47,7 +48,7 @@ func CreateQueue(ctx context.Context, opts ...option) (*Queue, error) {
 	}
 
 	for i := 1; i <= 2; i++ {
-		q.priorityChans = append(q.priorityChans, make(chan task.Task))
+		q.priorityChans = append(q.priorityChans, make(chan task.Task, q.maxBufferSize))
 	}
 
 	q.workerPool = CreateWorkerPool(q.workerPoolSize, q.priorityChans...)
@@ -65,11 +66,11 @@ func WithMainQueue(taskChan *chan []*task.Task) option {
 	}
 }
 
-// WithMaxQueueSize the max queue size before it must be processed to avoid starvation
-func WithMaxQueueSize(size int) option {
+// WithMaxBufferSize the max queue size before it must be processed to avoid starvation
+func WithMaxBufferSize(size int) option {
 	return func(q *Queue) {
 		if size > 1 {
-			q.maxQueueSize = size
+			q.maxBufferSize = size
 		}
 	}
 }
@@ -159,7 +160,11 @@ func (q *Queue) awaitResults() {
 						q.deadLetterQueue = append(q.deadLetterQueue, *t)
 						continue
 					}
+
 					t.Retries++
+					if t.BackOffDuration != nil {
+						t.BackOffUntil = time.Now().Add(*t.BackOffDuration)
+					}
 					slog.Info(fmt.Sprintf("failed: error while processing task:%s, retrying. retryNum:%d error: %v \n", t.Id, t.Retries, t.Error))
 
 					t.Error = nil

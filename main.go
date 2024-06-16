@@ -20,9 +20,10 @@ type Config struct {
 		ListenAddr string `yaml:"listenAddr"`
 	} `yaml:"api"`
 	Queue struct {
-		maxQueueSize   int `yaml:"maxQueueSize"`
+		maxBufferSize  int `yaml:"maxBufferSize"`
 		workerPoolSize int `yaml:"workerPoolSize,omitempty"`
 		maxTaskRetry   int `yaml:"maxTaskRetry"`
+		bufferSize     int `yaml:"bufferSize"`
 	} `yaml:"queue"`
 }
 
@@ -43,8 +44,8 @@ func main() {
 
 	q, err := queue.CreateQueue(mainCtx,
 		queue.WithMainQueue(&taskChan),
-		queue.WithMaxQueueSize(config.Queue.maxQueueSize),
-		queue.WithMaxWorkerPoolSize(config.Queue.maxQueueSize),
+		queue.WithMaxBufferSize(config.Queue.maxBufferSize),
+		queue.WithMaxWorkerPoolSize(config.Queue.workerPoolSize),
 		queue.WithMaxTaskRetry(config.Queue.maxTaskRetry))
 
 	if err != nil {

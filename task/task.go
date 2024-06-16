@@ -59,6 +59,7 @@ type Task struct {
 	Priority        ExecutionPriority
 	Type            TypeOf
 	Status          CurrentStatus
+	BackOffDuration *time.Duration
 	Payload         json.RawMessage
 	ProcessableTask Processable
 
@@ -69,8 +70,9 @@ type Task struct {
 	StartedAt  time.Time
 	FinishedAt time.Time
 
-	Retries int
-	Error   *error
+	Retries      int
+	BackOffUntil time.Time
+	Error        *error
 }
 
 type option func(task *Task)
@@ -93,6 +95,15 @@ func WithType(typeOf TypeOf) option {
 func WithCreatedBy(id string) option {
 	return func(t *Task) {
 		t.CreatedBy = id
+	}
+}
+
+// WithBackoffTime sets created by user id
+func WithBackoffTime(backoffDuration *time.Duration) option {
+	return func(t *Task) {
+		if backoffDuration != nil {
+			t.BackOffDuration = backoffDuration
+		}
 	}
 }
 
