@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/sinderpl/AsyncTaskProcessor/api"
 	"github.com/sinderpl/AsyncTaskProcessor/queue"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
@@ -20,10 +21,9 @@ type Config struct {
 		ListenAddr string `yaml:"listenAddr"`
 	} `yaml:"api"`
 	Queue struct {
-		maxBufferSize  int `yaml:"maxBufferSize"`
-		workerPoolSize int `yaml:"workerPoolSize,omitempty"`
-		maxTaskRetry   int `yaml:"maxTaskRetry"`
-		bufferSize     int `yaml:"bufferSize"`
+		MaxBufferSize  int `yaml:"maxBufferSize"`
+		WorkerPoolSize int `yaml:"workerPoolSize,omitempty"`
+		MaxTaskRetry   int `yaml:"maxTaskRetry"`
 	} `yaml:"queue"`
 }
 
@@ -37,6 +37,8 @@ func main() {
 	if err := yaml.Unmarshal(cfgFile, &config); err != nil {
 		log.Fatalf("Failed to unmarshal YAML config data: %v", err)
 	}
+	fmt.Println(string(cfgFile))
+	fmt.Println(config)
 
 	// TODO graceful shutdown
 	mainCtx := context.Background()
@@ -44,9 +46,9 @@ func main() {
 
 	q, err := queue.CreateQueue(mainCtx,
 		queue.WithMainQueue(&taskChan),
-		queue.WithMaxBufferSize(config.Queue.maxBufferSize),
-		queue.WithMaxWorkerPoolSize(config.Queue.workerPoolSize),
-		queue.WithMaxTaskRetry(config.Queue.maxTaskRetry))
+		queue.WithMaxBufferSize(config.Queue.MaxBufferSize),
+		queue.WithMaxWorkerPoolSize(config.Queue.WorkerPoolSize),
+		queue.WithMaxTaskRetry(config.Queue.MaxTaskRetry))
 
 	if err != nil {
 		log.Fatalf("failed to initialize queue: %v", err)

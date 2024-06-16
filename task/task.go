@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO better name ? :D
 type Processable interface {
 	ProcessTask() error
 	ValidateTask() error
@@ -73,7 +72,7 @@ type Task struct {
 
 	Retries      int
 	BackOffUntil *time.Time
-	Error        *error
+	Error        error
 }
 
 type option func(task *Task)
@@ -100,10 +99,14 @@ func WithCreatedBy(id string) option {
 }
 
 // WithBackoffTime sets created by user id
-func WithBackoffTime(backoffDuration *time.Duration) option {
+func WithBackoffTime(backoffDuration string) option {
 	return func(t *Task) {
-		if backoffDuration != nil {
-			t.BackOffDuration = backoffDuration
+		if backoffDuration != "" {
+			h, err := time.ParseDuration(backoffDuration)
+			if err != nil {
+				return
+			}
+			t.BackOffDuration = &h
 		}
 	}
 }
@@ -133,7 +136,7 @@ func CreateTask(opts ...option) (*Task, error) {
 		return nil, fmt.Errorf("task validation failed: %v", err)
 	}
 
-	process, err := t.parseTaskType()
+	process, err := t.ParseTaskType()
 	if err != nil {
 		return nil, fmt.Errorf("task parsing failed: %v", err)
 	}
@@ -170,7 +173,8 @@ func (t *Task) validateTask() error {
 	return nil
 }
 
-func (t *Task) parseTaskType() (Processable, error) {
+// ParseTaskType parses the task payload into the correct type which implements the Processable interface
+func (t *Task) ParseTaskType() (Processable, error) {
 	var payload interface{}
 
 	switch t.Type {

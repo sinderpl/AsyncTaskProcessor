@@ -9,8 +9,7 @@ import (
 )
 
 type worker struct {
-	Id           string
-	IsProcessing bool
+	Id string
 }
 
 func createWorker() worker {
@@ -24,51 +23,42 @@ type WorkerPool struct {
 }
 
 // Start starts the worker to process tasks from multiple channels.
-func (w worker) Start(channels ...chan task.Task) {
+func (w worker) Start(resultChan chan task.Task, workerChan []chan task.Task) {
 	go func() {
 		for {
-			// TODO how to prioritise different channels
+			// TODO improve different channel prioritisation
 			select {
-			case t := <-channels[0]:
-				w.IsProcessing = true
-				t.Status = task.Processing
-				slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, t.Id, t.Priority))
-				err := t.ProcessableTask.ProcessTask()
-				if err != nil {
-					t.Status = task.ProcessingAwaitingRetry
-					w.IsProcessing = false
-
-				}
-
-				w.IsProcessing = false
-			case t := <-channels[1]:
-				w.IsProcessing = true
-				t.Status = task.Processing
-				slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, t.Id, t.Priority))
-				err := t.ProcessableTask.ProcessTask()
-				if err != nil {
-
-				}
-				w.IsProcessing = false
+			case t := <-workerChan[1]:
+				w.process(t, resultChan)
+			case t := <-workerChan[0]:
+				w.process(t, resultChan)
 			default:
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond) // Avoid busy-wait, poll every so often for new work
 			}
 		}
 	}()
 }
 
-func (w worker) process(t *task.Task) {
-
+// process starts the task processing implementation and returns any errors
+func (w worker) process(t task.Task, resultChan chan task.Task) {
+	t.Status = task.Processing
+	slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, t.Id, t.Priority))
+	err := t.ProcessableTask.ProcessTask()
+	if err != nil {
+		t.Status = task.ProcessingAwaitingRetry
+		t.Error = err
+		resultChan <- t
+	}
 }
 
 // CreateWorkerPool initializes a new worker pool of size numWorkers and registers them to listen to 2 chans
-func CreateWorkerPool(numWorkers int, chans ...chan task.Task) *WorkerPool {
+func CreateWorkerPool(numWorkers int, resultChan chan task.Task, workChans []chan task.Task) *WorkerPool {
 
 	pool := &WorkerPool{}
 
 	for i := 1; i <= numWorkers; i++ {
 		worker := createWorker()
-		worker.Start(chans...)
+		worker.Start(resultChan, workChans)
 	}
 
 	return pool

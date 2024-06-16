@@ -36,8 +36,15 @@ Content-Type: application/json
       "payload" : {
         "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
         "reportType" : "Financial Report"
+      }
+    },
+    {
+      "taskType" : "CPUProcess",
+      "priority" : 1,
+      "payload" : {
+        "ProcessType" : "want to fail"
       },
-      "backOffDuration" : 1000
+      "backOffDuration" : "5s"
     }
   ]
 }

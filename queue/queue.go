@@ -20,7 +20,7 @@ type Queue struct {
 	maxTaskRetry   int
 
 	mainTaskChan  *chan []*task.Task
-	resultChan    chan *task.Task
+	resultChan    chan task.Task
 	priorityChans []chan task.Task
 	workerPool    *WorkerPool
 
@@ -37,7 +37,7 @@ func CreateQueue(ctx context.Context, opts ...option) (*Queue, error) {
 		maxTaskRetry:   0,
 
 		priorityChans:   make([]chan task.Task, 0, 2),
-		resultChan:      make(chan *task.Task),
+		resultChan:      make(chan task.Task),
 		deadLetterQueue: make([]*task.Task, 0),
 		awaitingQueue: linkedList{
 			listMutex: sync.Mutex{},
@@ -56,7 +56,7 @@ func CreateQueue(ctx context.Context, opts ...option) (*Queue, error) {
 		q.priorityChans = append(q.priorityChans, make(chan task.Task, q.maxBufferSize))
 	}
 
-	q.workerPool = CreateWorkerPool(q.workerPoolSize, q.priorityChans...)
+	q.workerPool = CreateWorkerPool(q.workerPoolSize, q.resultChan, q.priorityChans)
 
 	return &q, nil
 }
@@ -105,61 +105,7 @@ func (q *Queue) Start() {
 	go q.pushToProcess()
 }
 
-type linkedList struct {
-	listMutex sync.Mutex
-	first     *node
-	last      *node
-}
-
-type node struct {
-	t    *task.Task
-	next *node
-	prev *node
-}
-
-func (l *linkedList) append(t *task.Task) {
-	l.listMutex.Lock()
-	defer l.listMutex.Unlock()
-
-	node := &node{
-		t:    t,
-		next: nil,
-		prev: nil,
-	}
-
-	if l.first == nil {
-		l.first = node
-		l.last = node
-		return
-	}
-
-	l.last.next = node
-	node.prev = l.last
-	l.last = node
-}
-
-func (l *linkedList) pop(n *node) {
-	l.listMutex.Lock()
-	defer l.listMutex.Unlock()
-
-	if l.first == n {
-		l.first = n.next
-	}
-
-	if l.last == n {
-		l.last = n.prev
-	}
-
-	if n.prev != nil {
-		n.prev.next = n.next
-	}
-
-	if n.next != nil {
-		n.next.prev = n.prev
-	}
-}
-
-// pushToProcess scans the current queue and pushes to the workers when there is space in the buffered chans
+// pushToProcess goroutine scans the current queue and pushes to the workers when there is space in the buffered chans
 // and a tasks backoff is finished or nil
 func (q *Queue) pushToProcess() {
 	go func() {
@@ -176,7 +122,7 @@ func (q *Queue) pushToProcess() {
 							// Small hack but with having more time I would probably rewrite priorityChans to be a map
 							// of taskId:taskPriority to allow for better prioritisation
 							if int(currNode.t.Priority) == priorityId && (currNode.t.BackOffUntil == nil ||
-								(currNode.t.BackOffUntil != nil && currNode.t.BackOffUntil.After(time.Now()))) {
+								(currNode.t.BackOffUntil != nil && currNode.t.BackOffUntil.Before(time.Now()))) {
 
 								// Enqueue the task to channel to be picked up by worker
 								currNode.t.Status = task.ProcessingEnqueued
@@ -239,10 +185,10 @@ func (q *Queue) awaitResults() {
 				}
 
 				if t.Error != nil {
-					if t.Retries > q.maxTaskRetry {
+					if t.Retries >= q.maxTaskRetry {
 						t.Status = task.ProcessingFailed
-						slog.Error(fmt.Sprintf("error while processing task: %s no retries left, error: %v \n", t.Id, t.Error))
-						q.deadLetterQueue = append(q.deadLetterQueue, t)
+						slog.Error(fmt.Sprintf("error while processing task: %s no retries left moving to dead letter queue, error: %v \n", t.Id, t.Error))
+						q.deadLetterQueue = append(q.deadLetterQueue, &t)
 						continue
 					}
 
@@ -251,10 +197,10 @@ func (q *Queue) awaitResults() {
 						bckOffUntil := time.Now().Add(*t.BackOffDuration)
 						t.BackOffUntil = &bckOffUntil
 					}
-					slog.Info(fmt.Sprintf("failed: error while processing task:%s, retrying. retryNum:%d error: %v \n", t.Id, t.Retries, t.Error))
+					slog.Info(fmt.Sprintf("failed: error while processing task: %s, retrying. retry attempt:%d error: %v \n", t.Id, t.Retries, t.Error))
 
 					t.Error = nil
-					q.enqueue(t)
+					q.enqueue(&t)
 					continue
 				}
 
@@ -264,4 +210,65 @@ func (q *Queue) awaitResults() {
 			}
 		}
 	}()
+}
+
+// I thought a linked list would be good to keep track of execution
+// This is due to channels in Go having to be buffered in order to keep items on their queue
+// A unbuffered channel does not wait until we have a worker available to read it
+// A buffered channel can only hold X tasks but will hold those until the workers pick them up which leaves us with
+// in-between tasks that are not ready for the channels but still need to be scheduled
+// In addition I wanted to have somewhere to store the tasks with backoff so they can be picked up later
+// (editing an array mid iteration is not a good idea so thought linked list might work better here)
+type linkedList struct {
+	listMutex sync.Mutex
+	first     *node
+	last      *node
+}
+
+type node struct {
+	t    *task.Task
+	next *node
+	prev *node
+}
+
+func (l *linkedList) append(t *task.Task) {
+	l.listMutex.Lock()
+	defer l.listMutex.Unlock()
+
+	node := &node{
+		t:    t,
+		next: nil,
+		prev: nil,
+	}
+
+	if l.first == nil {
+		l.first = node
+		l.last = node
+		return
+	}
+
+	l.last.next = node
+	node.prev = l.last
+	l.last = node
+}
+
+func (l *linkedList) pop(n *node) {
+	l.listMutex.Lock()
+	defer l.listMutex.Unlock()
+
+	if l.first == n {
+		l.first = n.next
+	}
+
+	if l.last == n {
+		l.last = n.prev
+	}
+
+	if n.prev != nil {
+		n.prev.next = n.next
+	}
+
+	if n.next != nil {
+		n.next.prev = n.prev
+	}
 }

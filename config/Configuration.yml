@@ -1,5 +1,5 @@
 api:
-  listenAddr : ':3000'
+  listenAddr: ':3000'
 queue:
   maxBufferSize: 10
   workerPoolSize: 5
