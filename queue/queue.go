@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"fmt"
+	"github.com/sinderpl/AsyncTaskProcessor/storage"
 	"log"
 	"log/slog"
 	"sync"
@@ -18,6 +19,7 @@ type Queue struct {
 	maxBufferSize  int
 	workerPoolSize int
 	maxTaskRetry   int
+	db             storage.Storage
 
 	mainTaskChan  *chan []*task.Task
 	resultChan    chan task.Task
@@ -95,6 +97,13 @@ func WithMaxTaskRetry(retries int) option {
 		if retries > 1 {
 			q.maxTaskRetry = retries
 		}
+	}
+}
+
+// WithStorage adds persistent data store
+func WithStorage(storage storage.Storage) option {
+	return func(q *Queue) {
+		q.db = storage
 	}
 }
 

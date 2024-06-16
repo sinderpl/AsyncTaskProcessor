@@ -114,7 +114,7 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 
 		tResp = TaskResponse{
 			Id:       newTask.Id,
-			TaskType: newTask.Type,
+			TaskType: newTask.TaskType,
 			Priority: newTask.Priority,
 			Status:   newTask.Status,
 		}

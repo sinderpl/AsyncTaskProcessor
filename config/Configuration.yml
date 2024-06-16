@@ -4,3 +4,7 @@ queue:
   maxBufferSize: 10
   workerPoolSize: 5
   maxTaskRetry: 3
+storage:
+  user: 'postgres'
+  dbname: 'postgres'
+  password: 'asyncProcessor'

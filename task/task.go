@@ -57,7 +57,7 @@ const (
 type Task struct {
 	Id              string
 	Priority        ExecutionPriority
-	Type            TypeOf
+	TaskType        TypeOf
 	Status          CurrentStatus
 	BackOffDuration *time.Duration
 	Payload         json.RawMessage
@@ -87,7 +87,7 @@ func WithPriority(priority ExecutionPriority) option {
 // WithType *Required* sets task type
 func WithType(typeOf TypeOf) option {
 	return func(t *Task) {
-		t.Type = typeOf
+		t.TaskType = typeOf
 	}
 }
 
@@ -154,11 +154,11 @@ func CreateTask(opts ...option) (*Task, error) {
 }
 
 func (t *Task) validateTask() error {
-	if t.Type == "" {
+	if t.TaskType == "" {
 		return fmt.Errorf("task type must be set")
 	}
 
-	if !isValidTypeOf(t.Type) {
+	if !isValidTypeOf(t.TaskType) {
 		return fmt.Errorf("unsupported task type")
 	}
 
@@ -177,7 +177,7 @@ func (t *Task) validateTask() error {
 func (t *Task) ParseTaskType() (Processable, error) {
 	var payload interface{}
 
-	switch t.Type {
+	switch t.TaskType {
 	case TypeSendEmail:
 		payload = new(SendEmail)
 	case TypeGenerateReport:
