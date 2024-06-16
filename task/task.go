@@ -148,7 +148,6 @@ func CreateTask(opts ...option) (*Task, error) {
 	// TODO The composition here could be improved
 	// Assign parsed task and remove the raw payload
 	t.ProcessableTask = process
-	t.Payload = nil
 
 	return t, nil
 }

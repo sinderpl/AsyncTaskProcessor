@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sinderpl/AsyncTaskProcessor/storage"
 	"log"
 	"log/slog"
 	"net/http"
@@ -17,6 +18,7 @@ const testUserId = "testUserIdTodo"
 type server struct {
 	listenAddr string
 	taskChan   *chan []*task.Task
+	db         storage.Storage
 }
 
 type errorResponse struct {
@@ -47,8 +49,15 @@ func WithListenAddr(addr string) option {
 
 // WithQueue *required* the queue will listen to new tasks on this chan
 func WithQueue(taskChan *chan []*task.Task) option {
-	return func(q *server) {
-		q.taskChan = taskChan
+	return func(srv *server) {
+		srv.taskChan = taskChan
+	}
+}
+
+// WithStorage adds persistent data store
+func WithStorage(storage storage.Storage) option {
+	return func(srv *server) {
+		srv.db = storage
 	}
 }
 
@@ -125,6 +134,10 @@ func (s *server) handleTaskEnqueue(w http.ResponseWriter, r *http.Request) error
 
 	// Write tasks to queue so it can distribute and begin processing
 	*s.taskChan <- newTasks
+
+	for _, task := range newTasks {
+		s.db.CreateTask(task)
+	}
 
 	resp.Status = "Successfully enqueued valid tasks"
 

@@ -3,6 +3,9 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
+
+	_ "github.com/lib/pq"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
 
@@ -24,15 +27,15 @@ func (p *PostgresStore) Init() error {
 
 func (p *PostgresStore) createTaskTable() error {
 	query := `create table if not exists tasks (
-		id string primary key,
+		id varchar(100) primary key,
 		priority int,
     	taskType varchar(30),
     	status varchar(60),
-    	backOffDuration int,
-    	processableTask jsonb,      
+    	backOffDuration bigint,
+    	payload jsonb,      
         createdAt timestamp,
-        createdBy string,
-    	error string,
+        createdBy varchar(30),
+    	error varchar(100)
 		)`
 
 	if _, err := p.db.Exec(query); err != nil {
@@ -63,26 +66,25 @@ func NewPostgresStore(user string, dbname string, password string) (*PostgresSto
 func (p PostgresStore) CreateTask(t *task.Task) error {
 	query := `
 		insert into tasks
-		(id, priority, taskType, status, backOffDuration, processableTask, createdAt, createdBy, error)
-		values ($1, $2, $3, $4, $5)
+		(id, priority, taskType, status, backOffDuration, payload, createdAt, createdBy, error)
+		values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		returning id
 		`
 
-	resp, err := p.db.Exec(
+	_, err := p.db.Exec(
 		query,
 		t.Id,
 		t.Priority,
 		t.TaskType,
 		t.Status,
 		t.BackOffDuration,
-		t.ProcessableTask,
+		t.Payload,
 		t.CreatedAt,
 		t.CreatedBy,
 		t.Error)
 
-	fmt.Printf("sql create task result %v \n", resp)
-
 	if err != nil {
+		slog.Error(err.Error())
 		return err
 	}
 	return nil

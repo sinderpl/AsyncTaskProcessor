@@ -13,7 +13,7 @@ import (
 
 var (
 	cfg        = Config{}
-	configPath = "cfg/Configuration.yml"
+	configPath = "config/Configuration.yml"
 )
 
 type Config struct {
@@ -73,7 +73,8 @@ func main() {
 
 	server := api.CreateApiServer(
 		api.WithListenAddr(cfg.Api.ListenAddr),
-		api.WithQueue(&taskChan))
+		api.WithQueue(&taskChan),
+		api.WithStorage(storage))
 
 	server.Run()
 
