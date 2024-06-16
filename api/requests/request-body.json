@@ -19,7 +19,7 @@
     },
     {
       "taskType" : "GenerateReport",
-      "priority" : 1,
+      "priority" : 0,
       "payload" : {
         "notify" : ["helloworld@test.com", "helloWorld2@test.com"],
         "reportType" : "Absence Report"

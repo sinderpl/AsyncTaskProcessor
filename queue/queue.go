@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/sinderpl/AsyncTaskProcessor/task"
@@ -18,25 +19,29 @@ type Queue struct {
 	workerPoolSize int
 	maxTaskRetry   int
 
-	mainTaskChan    *chan []*task.Task
-	resultChan      chan *task.Task
-	priorityChans   []chan task.Task
-	workerPool      *WorkerPool
-	awaitingEnqueue []*task.Task
-	deadLetterQueue []task.Task // TODO this needs management as it will grow forever
+	mainTaskChan  *chan []*task.Task
+	resultChan    chan *task.Task
+	priorityChans []chan task.Task
+	workerPool    *WorkerPool
+
+	awaitingQueue   linkedList
+	deadLetterQueue []*task.Task // TODO this needs management as it will grow forever
 }
 
 // CreateQueue creates and returns the Queue with predefined options
 func CreateQueue(ctx context.Context, opts ...option) (*Queue, error) {
 	q := Queue{
 		ctx:            ctx,
-		maxBufferSize:  5,
+		maxBufferSize:  10,
 		workerPoolSize: 5,
 		maxTaskRetry:   0,
 
 		priorityChans:   make([]chan task.Task, 0, 2),
 		resultChan:      make(chan *task.Task),
-		deadLetterQueue: make([]task.Task, 0),
+		deadLetterQueue: make([]*task.Task, 0),
+		awaitingQueue: linkedList{
+			listMutex: sync.Mutex{},
+		},
 	}
 
 	for _, opt := range opts {
@@ -97,24 +102,104 @@ func WithMaxTaskRetry(retries int) option {
 func (q *Queue) Start() {
 	go q.awaitTasks()
 	go q.awaitResults()
+	go q.pushToProcess()
 }
 
-// enqueue adds tasks to their respective priority queue to be processed when a worker is available
-func (q *Queue) enqueue(tasks ...*task.Task) {
+type linkedList struct {
+	listMutex sync.Mutex
+	first     *node
+	last      *node
+}
 
-	for _, t := range tasks {
-		t.Status = task.ProcessingEnqueued
-		slog.Info(fmt.Sprintf("enqueing task %s", t.Id))
+type node struct {
+	t    *task.Task
+	next *node
+	prev *node
+}
 
-		switch t.Priority {
-		case task.High:
-			q.priorityChans[0] <- *t
-		case task.Low:
-			q.priorityChans[1] <- *t
-		default:
-			q.priorityChans[len(q.priorityChans)] <- *t
+func (l *linkedList) append(t *task.Task) {
+	l.listMutex.Lock()
+	defer l.listMutex.Unlock()
+
+	node := &node{
+		t:    t,
+		next: nil,
+		prev: nil,
+	}
+
+	if l.first == nil {
+		l.first = node
+		l.last = node
+		return
+	}
+
+	l.last.next = node
+	node.prev = l.last
+	l.last = node
+}
+
+func (l *linkedList) pop(n *node) {
+	l.listMutex.Lock()
+	defer l.listMutex.Unlock()
+
+	if l.first == n {
+		l.first = n.next
+	}
+
+	if l.last == n {
+		l.last = n.prev
+	}
+
+	if n.prev != nil {
+		n.prev.next = n.next
+	}
+
+	if n.next != nil {
+		n.next.prev = n.prev
+	}
+}
+
+// pushToProcess scans the current queue and pushes to the workers when there is space in the buffered chans
+// and a tasks backoff is finished or nil
+func (q *Queue) pushToProcess() {
+	go func() {
+		for {
+
+			// Check if any of the chans have space for new tasks starting from highest priority one
+			for priorityId := len(q.priorityChans) - 1; priorityId >= 0; priorityId-- {
+				space := q.maxBufferSize - len(q.priorityChans[priorityId])
+
+				if space > 0 {
+					if q.awaitingQueue.first != nil {
+						currNode := q.awaitingQueue.first
+						for currNode != nil && space >= 0 {
+							// Small hack but with having more time I would probably rewrite priorityChans to be a map
+							// of taskId:taskPriority to allow for better prioritisation
+							if int(currNode.t.Priority) == priorityId && (currNode.t.BackOffUntil == nil ||
+								(currNode.t.BackOffUntil != nil && currNode.t.BackOffUntil.After(time.Now()))) {
+
+								// Enqueue the task to channel to be picked up by worker
+								currNode.t.Status = task.ProcessingEnqueued
+								slog.Info(fmt.Sprintf("enqueing task %s", currNode.t.Id))
+								q.priorityChans[priorityId] <- *currNode.t
+								q.awaitingQueue.pop(currNode)
+
+								// Decrease current available space on the chan and pop the node from the awaiting queue
+								space--
+							}
+							currNode = currNode.next
+						}
+					}
+				}
+			}
 		}
+	}()
+}
 
+// enqueue adds tasks to the awaiting channel queue to be processed when a worker is available
+func (q *Queue) enqueue(tasks ...*task.Task) {
+	for _, t := range tasks {
+		q.awaitingQueue.append(t)
 	}
 }
 
@@ -157,13 +242,14 @@ func (q *Queue) awaitResults() {
 					if t.Retries > q.maxTaskRetry {
 						t.Status = task.ProcessingFailed
 						slog.Error(fmt.Sprintf("error while processing task: %s no retries left, error: %v \n", t.Id, t.Error))
-						q.deadLetterQueue = append(q.deadLetterQueue, *t)
+						q.deadLetterQueue = append(q.deadLetterQueue, t)
 						continue
 					}
 
 					t.Retries++
 					if t.BackOffDuration != nil {
-						t.BackOffUntil = time.Now().Add(*t.BackOffDuration)
+						bckOffUntil := time.Now().Add(*t.BackOffDuration)
+						t.BackOffUntil = &bckOffUntil
 					}
 					slog.Info(fmt.Sprintf("failed: error while processing task:%s, retrying. retryNum:%d error: %v \n", t.Id, t.Retries, t.Error))
 

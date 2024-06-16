@@ -31,6 +31,7 @@ func (w worker) Start(channels ...chan task.Task) {
 			select {
 			case t := <-channels[0]:
 				w.IsProcessing = true
+				t.Status = task.Processing
 				slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, t.Id, t.Priority))
 				err := t.ProcessableTask.ProcessTask()
 				if err != nil {
@@ -40,10 +41,11 @@ func (w worker) Start(channels ...chan task.Task) {
 				}
 
 				w.IsProcessing = false
-			case task := <-channels[1]:
+			case t := <-channels[1]:
 				w.IsProcessing = true
-				slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, task.Id, task.Priority))
-				err := task.ProcessableTask.ProcessTask()
+				t.Status = task.Processing
+				slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, t.Id, t.Priority))
+				err := t.ProcessableTask.ProcessTask()
 				if err != nil {
 
 				}
@@ -59,6 +61,7 @@ func (w worker) process(t *task.Task) {
 
 }
 
+// CreateWorkerPool initializes a new worker pool of size numWorkers and registers them to listen to 2 chans
 func CreateWorkerPool(numWorkers int, chans ...chan task.Task) *WorkerPool {
 
 	pool := &WorkerPool{}

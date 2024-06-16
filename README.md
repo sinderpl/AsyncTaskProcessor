@@ -23,8 +23,8 @@ TODO
 - [ ] System Documentation
 
 Bonus
-- [ ] Max concurrent limit
-- [ ] Retries with backoff
+- [x] Max concurrent limit
+- [x] Retries with backoff
 - [ ] Persistence
 
 

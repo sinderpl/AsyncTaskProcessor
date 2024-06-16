@@ -49,6 +49,7 @@ type CurrentStatus string
 const (
 	ProcessingAwaiting      CurrentStatus = "Awaiting enqueue"
 	ProcessingEnqueued      CurrentStatus = "Enqueued, awaiting processing"
+	Processing              CurrentStatus = "Being processed by worker"
 	ProcessingSuccess       CurrentStatus = "Processed successfully"
 	ProcessingAwaitingRetry CurrentStatus = "Awaiting retry"
 	ProcessingFailed        CurrentStatus = "Failed to process"
@@ -71,7 +72,7 @@ type Task struct {
 	FinishedAt time.Time
 
 	Retries      int
-	BackOffUntil time.Time
+	BackOffUntil *time.Time
 	Error        *error
 }
 
@@ -160,6 +161,10 @@ func (t *Task) validateTask() error {
 
 	if t.CreatedBy == "" {
 		return fmt.Errorf("creator user id must be set")
+	}
+
+	if t.Priority < Low || t.Priority > High {
+		return fmt.Errorf("unsupported priority")
 	}
 
 	return nil

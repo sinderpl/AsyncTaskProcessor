@@ -1,6 +1,6 @@
 api:
   listenAddr : ':3000'
 queue:
-  maxBufferSize: 100
-  workerPoolSize: 10
+  maxBufferSize: 10
+  workerPoolSize: 5
   maxTaskRetry: 3
