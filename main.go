@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+
+	"gopkg.in/yaml.v2"
+
 	"github.com/sinderpl/AsyncTaskProcessor/api"
 	"github.com/sinderpl/AsyncTaskProcessor/queue"
 	"github.com/sinderpl/AsyncTaskProcessor/storage"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
-	"gopkg.in/yaml.v2"
-	"log"
-	"os"
 )
 
 var (

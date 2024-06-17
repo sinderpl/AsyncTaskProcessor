@@ -4,11 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/lib/pq"
-	"github.com/sinderpl/AsyncTaskProcessor/task"
 	"log"
 	"log/slog"
+
+	_ "github.com/lib/pq"
+	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
+
+// Package storage deals with persisting task info in the database
 
 // TODO add batch create task
 type Storage interface {
@@ -17,15 +20,18 @@ type Storage interface {
 	GetTaskById(string) (*task.Task, error)
 }
 
+// PostgresStore stores basic postgres sql data
 type PostgresStore struct {
 	db   *sql.DB
 	name string
 }
 
+// Init is used to run db migrations on startup
 func (p *PostgresStore) Init() error {
 	return p.createTaskTable()
 }
 
+// createTaskTable migration for tasks table
 func (p *PostgresStore) createTaskTable() error {
 	query := `create table if not exists tasks (
 		id varchar(100) primary key,
@@ -48,6 +54,7 @@ func (p *PostgresStore) createTaskTable() error {
 	return nil
 }
 
+// NewPostgresStore initializes the db connection
 func NewPostgresStore(host string, user string, dbname string, password string) (*PostgresStore, error) {
 	connStr := fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=disable", host, user, dbname, password)
 	db, err := sql.Open("postgres", connStr)
@@ -66,6 +73,7 @@ func NewPostgresStore(host string, user string, dbname string, password string) 
 	}, nil
 }
 
+// CreateTask creates the task row in the database
 func (p PostgresStore) CreateTask(t *task.Task) error {
 	query := `
 		insert into tasks
@@ -93,6 +101,7 @@ func (p PostgresStore) CreateTask(t *task.Task) error {
 	return nil
 }
 
+// UpdateTask takes in task id and attempts to update the row in the database
 func (p PostgresStore) UpdateTask(t *task.Task) error {
 
 	// Prepare the SQL update statement
@@ -120,6 +129,7 @@ func (p PostgresStore) UpdateTask(t *task.Task) error {
 	return nil
 }
 
+// GetTaskById retrieves the task info from the database
 func (p PostgresStore) GetTaskById(id string) (*task.Task, error) {
 	rows, err := p.db.Query("select * from tasks where id = $1", id)
 

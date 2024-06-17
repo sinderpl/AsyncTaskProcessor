@@ -3,17 +3,18 @@ package queue
 import (
 	"context"
 	"fmt"
-	"github.com/sinderpl/AsyncTaskProcessor/storage"
 	"log"
 	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/sinderpl/AsyncTaskProcessor/storage"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
 
 type option func(q *Queue)
 
+// Queue represents our queue handler taking care of all the retries, awaits and passing the tasks onto workers
 type Queue struct {
 	ctx            context.Context
 	maxBufferSize  int
@@ -21,13 +22,12 @@ type Queue struct {
 	maxTaskRetry   int
 	db             storage.Storage
 
-	mainTaskChan  *chan []*task.Task
-	resultChan    chan task.Task
-	priorityChans []chan task.Task
-	workerPool    *WorkerPool
+	mainTaskChan  *chan []*task.Task // we receive any new tasks on this channel
+	resultChan    chan task.Task     // the workers can write the task status back to this channel
+	priorityChans []chan task.Task   // deals with the different priorities low / high
+	workerPool    *WorkerPool        // instance of our workers that are created here, could perhaps be externalised to its own package
 
-	awaitingQueue   linkedList
-	deadLetterQueue []*task.Task // TODO this needs management as it will grow forever
+	awaitingQueue linkedList // stores tasks when the buffered chans dont have capacity yet
 }
 
 // CreateQueue creates and returns the Queue with predefined options
@@ -38,9 +38,8 @@ func CreateQueue(ctx context.Context, opts ...option) (*Queue, error) {
 		workerPoolSize: 5,
 		maxTaskRetry:   0,
 
-		priorityChans:   make([]chan task.Task, 0, 2),
-		resultChan:      make(chan task.Task),
-		deadLetterQueue: make([]*task.Task, 0),
+		priorityChans: make([]chan task.Task, 0, 2),
+		resultChan:    make(chan task.Task),
 		awaitingQueue: linkedList{
 			listMutex: sync.Mutex{},
 		},
@@ -202,12 +201,11 @@ func (q *Queue) awaitResults() {
 					if t.Retries >= q.maxTaskRetry {
 						t.Status = task.ProcessingFailed
 						fmt.Println(t.ErrorDetails)
-						slog.Error(fmt.Sprintf("error while processing task: %s no retries left moving to dead letter queue, error: %v \n", t.Id, t.Error))
+						slog.Error(fmt.Sprintf("error while processing task: %s no retries left saving failed status, error: %v \n", t.Id, t.Error))
 						err := q.db.UpdateTask(&t)
 						if err != nil {
 							slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
 						}
-						q.deadLetterQueue = append(q.deadLetterQueue, &t)
 						continue
 					}
 

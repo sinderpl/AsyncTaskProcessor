@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// Processable interface is implemented by each task allowing us to implement custom processing logic easier
+// there is also a validate method to validate parameters after parsing from the requests
 type Processable interface {
 	ProcessTask() error
 	ValidateTask() error
@@ -145,13 +147,14 @@ func CreateTask(opts ...option) (*Task, error) {
 		return nil, fmt.Errorf(" task payload validation failed: %v", err)
 	}
 
-	// TODO The composition here could be improved
+	// TODO The composition here could perhaps be improved
 	// Assign parsed task and remove the raw payload
 	t.ProcessableTask = process
 
 	return t, nil
 }
 
+// validateTask validates the basic task data such as type and priority
 func (t *Task) validateTask() error {
 	if t.TaskType == "" {
 		return fmt.Errorf("task type must be set")

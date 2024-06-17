@@ -15,7 +15,7 @@ TODO
 - [ ] Queue Management
 - [ ] Queue prioritisation (avoid starvation)
 - [x] Storage database
-- [ ] Add docker-compose to create persistence through sql
+- [x] Add docker-compose db to create persistence through sql
 - [x] Async Processing
 - [x] Error handling, retries
 - [x] Dead Letter Queue
