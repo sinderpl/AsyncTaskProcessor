@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 
@@ -37,7 +38,10 @@ type Config struct {
 
 func main() {
 
-	cfgFile, err := os.ReadFile(configPath)
+	cfgPath := flag.String("cfg", configPath, "specify which config file to point to")
+	flag.Parse()
+
+	cfgFile, err := os.ReadFile(*cfgPath)
 	if err != nil {
 		log.Fatalf("Failed to read cfg file: %v", err)
 	}
