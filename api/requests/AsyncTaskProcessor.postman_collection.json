@@ -1,0 +1,124 @@
+{
+	"info": {
+		"_postman_id": "c9c020c1-905e-4f93-b412-6ed8246e8771",
+		"name": "AsyncTaskProcessor",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "11371605"
+	},
+	"item": [
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Healthz",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/healthz",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"healthz"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Task",
+			"item": [
+				{
+					"name": "Task",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/task/8d5e2c19-27b2-4f3b-a6fd-3043cd4c35c7",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"task",
+								"8d5e2c19-27b2-4f3b-a6fd-3043cd4c35c7"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Enqueue Tasks",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"tasks\" : [\n    {\n      \"taskType\" : \"SendEmail\",\n      \"payload\": {\n        \"sendTo\" : [\"helloworld@test.com\", \"helloWorld2@test.com\"],\n        \"sendFrom\": \"hello1@test.com\",\n        \"subject\" : \"Hi !\",\n        \"body\" : \"hope you are well\"\n      }\n    },\n    {\n      \"taskType\" : \"GenerateReport\",\n      \"priority\" : 1,\n      \"payload\" : {\n        \"notify\" : [\"helloworld@test.com\", \"helloWorld2@test.com\"],\n        \"reportType\" : \"Financial Report\"\n      }\n    },\n    {\n      \"taskType\" : \"CPUProcess\",\n      \"priority\" : 1,\n      \"payload\" : {\n        \"ProcessType\" : \"want to fail\"\n      },\n      \"backOffDuration\" : \"5s\"\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/tasks/enqueue",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"tasks",
+								"enqueue"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Task Retry",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/task/e83a5116-0191-462c-8cf7-18c21a3a4939/retry",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"task",
+								"e83a5116-0191-462c-8cf7-18c21a3a4939",
+								"retry"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "taskId",
+			"value": "e83a5116-0191-462c-8cf7-18c21a3a4939"
+		}
+	]
+}
