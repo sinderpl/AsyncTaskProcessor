@@ -26,6 +26,7 @@ type Config struct {
 		MaxTaskRetry   int `yaml:"maxTaskRetry"`
 	} `yaml:"queue"`
 	Storage struct {
+		Host     string `yaml:"host"`
 		User     string `yaml:"user"`
 		DBName   string `yaml:"dbname"`
 		Password string `yaml:"password"`
@@ -46,7 +47,7 @@ func main() {
 	// TODO graceful shutdown
 	mainCtx := context.Background()
 
-	storage, err := storage.NewPostgresStore(cfg.Storage.User, cfg.Storage.DBName, cfg.Storage.Password)
+	storage, err := storage.NewPostgresStore(cfg.Storage.Host, cfg.Storage.User, cfg.Storage.DBName, cfg.Storage.Password)
 
 	if err != nil {
 		log.Fatalf("Failed to initialise database: %v", err)

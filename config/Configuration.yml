@@ -1,10 +1,11 @@
 api:
-  listenAddr: ':3000'
+  listenAddr: ':8080'
 queue:
   maxBufferSize: 10
   workerPoolSize: 5
   maxTaskRetry: 3
 storage:
+  host: 'db'
   user: 'postgres'
   dbname: 'postgres'
   password: 'asyncProcessor'

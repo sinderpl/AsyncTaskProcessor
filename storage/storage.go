@@ -48,8 +48,8 @@ func (p *PostgresStore) createTaskTable() error {
 	return nil
 }
 
-func NewPostgresStore(user string, dbname string, password string) (*PostgresStore, error) {
-	connStr := fmt.Sprintf("user=%s dbname=%s password=%s sslmode=disable", user, dbname, password)
+func NewPostgresStore(host string, user string, dbname string, password string) (*PostgresStore, error) {
+	connStr := fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=disable", host, user, dbname, password)
 	db, err := sql.Open("postgres", connStr)
 
 	if err != nil {
