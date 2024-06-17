@@ -12,6 +12,8 @@ import (
 	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
 
+// Package queue deals with receiving tasks, sending them to the worker pool and handling retries / backoff
+
 type option func(q *Queue)
 
 // Queue represents our queue handler taking care of all the retries, awaits and passing the tasks onto workers

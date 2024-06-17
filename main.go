@@ -79,6 +79,9 @@ func main() {
 		api.WithQueue(&taskChan),
 		api.WithStorage(storage))
 
-	server.Run()
+	err = server.Run()
+	if err != nil {
+		log.Fatalf("failed to start up sever: %v", err)
+	}
 
 }

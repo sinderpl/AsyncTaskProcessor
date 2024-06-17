@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// Package task deals with creating, validating and parsing task requests into runnable tasks
+
 // Processable interface is implemented by each task allowing us to implement custom processing logic easier
 // there is also a validate method to validate parameters after parsing from the requests
 type Processable interface {

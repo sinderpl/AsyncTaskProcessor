@@ -2,11 +2,14 @@ package queue
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/sinderpl/AsyncTaskProcessor/task"
 	"log/slog"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
+
+// Package queue/workerPool deals with creating the worker pool and the workers which then process the tasks
 
 type worker struct {
 	Id string
