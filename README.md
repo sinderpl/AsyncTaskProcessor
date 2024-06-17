@@ -9,10 +9,12 @@ TODO
 - [x] Config
 - [x] API
 - [x] Endpoint for enqueue tasks
-- [ ] Endpoint for querying tasks
+- [x] Endpoint for querying tasks
+- [x] Retry failed endpoint
 - [x] Generic Task
 - [ ] Queue Management
 - [ ] Queue prioritisation (avoid starvation)
+- [x] Storage database
 - [ ] Add docker-compose to create persistence through sql
 - [x] Async Processing
 - [x] Error handling, retries
@@ -25,7 +27,7 @@ TODO
 Bonus
 - [x] Max concurrent limit
 - [x] Retries with backoff
-- [ ] Persistence
+- [x] Persistence
 
 
 Final

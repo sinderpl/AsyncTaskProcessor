@@ -74,6 +74,10 @@ func (s *server) Run() error {
 		Methods(http.MethodPost)
 
 	router.
+		HandleFunc("/task/{id}/retry", makeHTTPHandleFunc(s.handleTaskRetry)).
+		Methods(http.MethodPost)
+
+	router.
 		HandleFunc("/task/{id}", makeHTTPHandleFunc(s.handleGetTaskInfo)).
 		Methods(http.MethodGet)
 
@@ -169,11 +173,49 @@ func (s *server) handleGetTaskInfo(w http.ResponseWriter, r *http.Request) error
 	return writeJson(w, http.StatusOK, tResp)
 }
 
-func (s *server) handleGetTasksInfo(w http.ResponseWriter, r *http.Request) error {
-	idStr := r.URL.Query().Get("ids")
-	fmt.Println(idStr)
+func (s *server) handleTaskRetry(w http.ResponseWriter, r *http.Request) error {
+	idStr, ok := mux.Vars(r)["id"]
 
-	return writeJson(w, http.StatusOK, idStr)
+	if !ok {
+		return fmt.Errorf("id required to find task")
+
+	}
+
+	t, err := s.db.GetTaskById(idStr)
+
+	if err != nil || t == nil {
+		return writeJson(w, http.StatusNotFound, fmt.Errorf("task not found"))
+	}
+
+	if t.Status != task.ProcessingFailed {
+		return fmt.Errorf("only failed tasks can be retired, task status :%s", t.Status)
+	}
+
+	processable, err := t.ParseTaskType()
+
+	if err != nil {
+		return err
+	}
+
+	// TODO loading and retrying the task could be structured better
+	t.ProcessableTask = processable
+	t.Error = nil
+	t.ErrorDetails = ""
+	t.Status = task.ProcessingAwaiting
+
+	// Write tasks to queue so it can distribute and begin processing
+	*s.taskChan <- []*task.Task{t}
+
+	s.db.UpdateTask(t)
+
+	tResp := TaskResponse{
+		Id:       t.Id,
+		TaskType: t.TaskType,
+		Priority: t.Priority,
+		Status:   t.Status,
+	}
+
+	return writeJson(w, http.StatusOK, tResp)
 }
 
 func makeHTTPHandleFunc(f func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
