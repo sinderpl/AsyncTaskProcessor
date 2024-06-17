@@ -1,0 +1,7 @@
+# curl --location --request POST 'http://localhost:8080/task/e83a5116-0191-462c-8cf7-18c21a3a4939/retry'
+#--data ''
+POST http://localhost:8080/task/e83a5116-0191-462c-8cf7-18c21a3a4939/retry
+Content-Type: application/x-www-form-urlencoded
+
+###
+

@@ -1,0 +1,7 @@
+###
+
+# curl --location 'http://localhost:8080/task/8d5e2c19-27b2-4f3b-a6fd-3043cd4c35c7'
+GET http://localhost:8080/task/8d5e2c19-27b2-4f3b-a6fd-3043cd4c35c7
+
+###
+

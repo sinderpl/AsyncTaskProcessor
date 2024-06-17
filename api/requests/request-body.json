@@ -44,6 +44,22 @@
         "subject": "Enquiry about availability",
         "body": "hope you are well"
       }
+    },
+    {
+      "taskType": "CPUProcess",
+      "priority": 1,
+      "payload": {
+        "ProcessType": "want to fail"
+      },
+      "backOffDuration": "5s"
+    },
+    {
+      "taskType": "CPUProcess",
+      "priority": 1,
+      "payload": {
+        "ProcessType": "want to fail 2 electric boogaloo"
+      },
+      "backOffDuration": "2s"
     }
   ]
 }
