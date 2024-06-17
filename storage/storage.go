@@ -2,11 +2,12 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
-	"log/slog"
-
 	_ "github.com/lib/pq"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
+	"log"
+	"log/slog"
 )
 
 // TODO add batch create task
@@ -35,6 +36,8 @@ func (p *PostgresStore) createTaskTable() error {
     	payload jsonb,      
         createdAt timestamp,
         createdBy varchar(30),
+    	startedAt  timestamp,
+    	finishedAt  timestamp,
     	error varchar(100)
 		)`
 
@@ -81,7 +84,7 @@ func (p PostgresStore) CreateTask(t *task.Task) error {
 		t.Payload,
 		t.CreatedAt,
 		t.CreatedBy,
-		t.Error)
+		t.ErrorDetails)
 
 	if err != nil {
 		slog.Error(err.Error())
@@ -91,8 +94,30 @@ func (p PostgresStore) CreateTask(t *task.Task) error {
 }
 
 func (p PostgresStore) UpdateTask(t *task.Task) error {
-	//TODO implement me
-	panic("implement me")
+
+	// Prepare the SQL update statement
+	sqlStatement := `
+        UPDATE tasks
+        SET status = $2, startedAt = $3, finishedAt = $4, error = $5
+        WHERE id = $1;`
+
+	// Execute the update statement
+	res, err := p.db.Exec(sqlStatement, t.Id, t.Status, t.StartedAt, t.FinishedAt, t.ErrorDetails)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		slog.Error("error while writing task to database: ", err)
+		return err
+	}
+
+	if count == 0 {
+		return errors.New("failed to find and update task id in database")
+	}
+
+	return nil
 }
 
 func (p PostgresStore) GetTaskById(id string) (*task.Task, error) {
@@ -106,24 +131,32 @@ func (p PostgresStore) GetTaskById(id string) (*task.Task, error) {
 		return scanIntoTask(rows)
 	}
 
-	return nil, fmt.Errorf("account %d not found", id)
+	return nil, fmt.Errorf("task %s not found", id)
 }
 
 func scanIntoTask(rows *sql.Rows) (*task.Task, error) {
 	t := new(task.Task)
+
 	err := rows.Scan(
 		&t.Id,
 		&t.Priority,
 		&t.TaskType,
 		&t.Status,
 		&t.BackOffDuration,
-		&t.ProcessableTask,
+		&t.Payload,
 		&t.CreatedAt,
 		&t.CreatedBy,
-		&t.Error)
+		&t.StartedAt,
+		&t.FinishedAt,
+		&t.ErrorDetails)
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Not ideal but I needed a quick workaround to save in case task has an error
+	if t.ErrorDetails != "" {
+		t.Error = errors.New(t.ErrorDetails)
 	}
 
 	return t, nil

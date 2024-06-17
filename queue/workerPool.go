@@ -42,14 +42,16 @@ func (w worker) Start(resultChan chan task.Task, workerChan []chan task.Task) {
 // process starts the task processing implementation and returns any errors
 func (w worker) process(t task.Task, resultChan chan task.Task) {
 	t.Status = task.Processing
-	t.StartedAt = time.Now().UTC()
+	currTime := time.Now().UTC()
+	t.StartedAt = &currTime
 	slog.Info(fmt.Sprintf("worker %s is processing task: %s with priority: %d \n", w.Id, t.Id, t.Priority))
 	err := t.ProcessableTask.ProcessTask()
 	if err != nil {
 		t.Status = task.ProcessingAwaitingRetry
 		t.Error = err
-		resultChan <- t
+		t.ErrorDetails = err.Error()
 	}
+	resultChan <- t
 }
 
 // CreateWorkerPool initializes a new worker pool of size numWorkers and registers them to listen to 2 chans

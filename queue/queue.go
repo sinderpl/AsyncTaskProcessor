@@ -139,6 +139,11 @@ func (q *Queue) pushToProcess() {
 								q.priorityChans[priorityId] <- *currNode.t
 								q.awaitingQueue.pop(currNode)
 
+								err := q.db.UpdateTask(currNode.t)
+								if err != nil {
+									slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
+								}
+
 								// Decrease current available space on the chan and pop the node from the awaiting queue
 								space--
 							}
@@ -196,7 +201,12 @@ func (q *Queue) awaitResults() {
 				if t.Error != nil {
 					if t.Retries >= q.maxTaskRetry {
 						t.Status = task.ProcessingFailed
+						fmt.Println(t.ErrorDetails)
 						slog.Error(fmt.Sprintf("error while processing task: %s no retries left moving to dead letter queue, error: %v \n", t.Id, t.Error))
+						err := q.db.UpdateTask(&t)
+						if err != nil {
+							slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
+						}
 						q.deadLetterQueue = append(q.deadLetterQueue, &t)
 						continue
 					}
@@ -214,7 +224,12 @@ func (q *Queue) awaitResults() {
 				}
 
 				t.Status = task.ProcessingSuccess
-				t.FinishedAt = time.Now()
+				currTime := time.Now().UTC()
+				t.FinishedAt = &currTime
+				err := q.db.UpdateTask(&t)
+				if err != nil {
+					slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
+				}
 				slog.Info(fmt.Sprintf("task:%s processed succesfully \n", t.Id))
 			}
 		}

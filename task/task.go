@@ -66,13 +66,13 @@ type Task struct {
 	CreatedAt time.Time
 	CreatedBy string
 
-	// TODO add a running log
-	StartedAt  time.Time
-	FinishedAt time.Time
+	StartedAt  *time.Time
+	FinishedAt *time.Time
 
 	Retries      int
 	BackOffUntil *time.Time
 	Error        error
+	ErrorDetails string // Used for DB persistence
 }
 
 type option func(task *Task)

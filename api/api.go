@@ -152,8 +152,21 @@ func (s *server) handleGetTaskInfo(w http.ResponseWriter, r *http.Request) error
 
 	}
 
-	// TODO hook in persistence
-	return writeJson(w, http.StatusOK, idStr)
+	task, err := s.db.GetTaskById(idStr)
+
+	if err != nil || task == nil {
+		return writeJson(w, http.StatusNotFound, fmt.Errorf("task not found"))
+	}
+
+	tResp := TaskResponse{
+		Id:       task.Id,
+		TaskType: task.TaskType,
+		Priority: task.Priority,
+		Status:   task.Status,
+		Err:      task.ErrorDetails,
+	}
+
+	return writeJson(w, http.StatusOK, tResp)
 }
 
 func (s *server) handleGetTasksInfo(w http.ResponseWriter, r *http.Request) error {
