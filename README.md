@@ -114,17 +114,17 @@ Sample task body:
 ```
 All of the requests and postman collection can be found in api/requests to easily import and test. <br/>
 ### Endpoints:
-#### GET /healthz - simple endpoint to check if service is up and running
+#### GET /healthz - endpoint to check if service is up and running
 ```
 curl --location 'http://localhost:8080/healthz'
 ```
 
-#### GET /task/{id} - simple endpoint to check if service is up and running
+#### GET /task/{id} - retrieves task and its status
 ```
 curl --location 'http://localhost:8080/task/{taskId}'
 ```
 
-#### POST /tasks/enqueue - simple endpoint to check if service is up and running
+#### POST /tasks/enqueue - enqueues tasks 
 There are currently 3 task types with taskType CPUProcess being implemented to fail on purpose to allow for testing
 ```
 curl --location 'http://localhost:8080/tasks/enqueue' \
@@ -160,7 +160,7 @@ curl --location 'http://localhost:8080/tasks/enqueue' \
 }'
 ```
 
-#### POST /task/{taskId}/retry - simple endpoint to check if service is up and running
+#### POST /task/{taskId}/retry - allows for a task to be retried
 ```
 curl --location --request POST 'http://localhost:8080/task/e83a5116-0191-462c-8cf7-18c21a3a4939/retry' \
 --data ''
