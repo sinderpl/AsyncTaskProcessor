@@ -115,7 +115,7 @@ func (q *Queue) Start() {
 	go q.pushToProcess()
 }
 
-// pushToProcess goroutine scans the current queue and pushes to the workers when there is space in the buffered chans
+// pushToProcess scans the current queue and pushes to the workers when there is space in the buffered chans
 // and a tasks backoff is finished or nil
 func (q *Queue) pushToProcess() {
 	for {
@@ -163,7 +163,7 @@ func (q *Queue) enqueue(tasks ...*task.Task) {
 	}
 }
 
-// awaitTasks goroutine waiting for new tasks coming in
+// awaitTasks waits for new tasks to come in and push them to be processed
 func (q *Queue) awaitTasks() {
 	slog.Info("await tasks queue has started listening")
 	for {
@@ -181,7 +181,7 @@ func (q *Queue) awaitTasks() {
 	}
 }
 
-// awaitResults goroutine waiting for task results so that it can retry or fail them
+// awaitResults waiting for task results so that it can retry or fail them
 func (q *Queue) awaitResults() {
 	slog.Info("await results queue has started listening")
 	for {
