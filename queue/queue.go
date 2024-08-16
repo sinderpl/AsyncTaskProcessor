@@ -118,43 +118,42 @@ func (q *Queue) Start() {
 // pushToProcess goroutine scans the current queue and pushes to the workers when there is space in the buffered chans
 // and a tasks backoff is finished or nil
 func (q *Queue) pushToProcess() {
-	go func() {
-		for {
+	for {
+		// TODO add context deadline
 
-			// Check if any of the chans have space for new tasks starting from highest priority one
-			for priorityId := len(q.priorityChans) - 1; priorityId >= 0; priorityId-- {
-				space := q.maxBufferSize - len(q.priorityChans[priorityId])
+		// Check if any of the chans have space for new tasks starting from highest priority one
+		for priorityId := len(q.priorityChans) - 1; priorityId >= 0; priorityId-- {
+			space := q.maxBufferSize - len(q.priorityChans[priorityId])
 
-				if space > 0 {
-					if q.awaitingQueue.first != nil {
-						currNode := q.awaitingQueue.first
-						for currNode != nil && space >= 0 {
-							// Small hack but with having more time I would probably rewrite priorityChans to be a map
-							// of taskId:taskPriority to allow for better prioritisation
-							if int(currNode.t.Priority) == priorityId && (currNode.t.BackOffUntil == nil ||
-								(currNode.t.BackOffUntil != nil && currNode.t.BackOffUntil.Before(time.Now()))) {
+			if space > 0 {
+				if q.awaitingQueue.getFirst() != nil {
+					currNode := q.awaitingQueue.first
+					for currNode != nil && space >= 0 {
+						// Small hack but with having more time I would probably rewrite priorityChans to be a map
+						// of taskId:taskPriority to allow for better prioritisation
+						if int(currNode.t.Priority) == priorityId && (currNode.t.BackOffUntil == nil ||
+							(currNode.t.BackOffUntil != nil && currNode.t.BackOffUntil.Before(time.Now()))) {
 
-								// Enqueue the task to channel to be picked up by worker
-								currNode.t.Status = task.ProcessingEnqueued
-								slog.Info(fmt.Sprintf("enqueing task %s", currNode.t.Id))
-								q.priorityChans[priorityId] <- *currNode.t
-								q.awaitingQueue.pop(currNode)
+							// Enqueue the task to channel to be picked up by worker
+							currNode.t.Status = task.ProcessingEnqueued
+							slog.Info(fmt.Sprintf("enqueing task %s", currNode.t.Id))
+							q.priorityChans[priorityId] <- *currNode.t
+							q.awaitingQueue.pop(currNode)
 
-								err := q.db.UpdateTask(currNode.t)
-								if err != nil {
-									slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
-								}
-
-								// Decrease current available space on the chan and pop the node from the awaiting queue
-								space--
+							err := q.db.UpdateTask(currNode.t)
+							if err != nil {
+								slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
 							}
-							currNode = currNode.next
+
+							// Decrease current available space on the chan and pop the node from the awaiting queue
+							space--
 						}
+						currNode = currNode.next
 					}
 				}
 			}
 		}
-	}()
+	}
 }
 
 // enqueue adds tasks to the awaiting channel queue to be processed when a worker is available
@@ -166,74 +165,70 @@ func (q *Queue) enqueue(tasks ...*task.Task) {
 
 // awaitTasks goroutine waiting for new tasks coming in
 func (q *Queue) awaitTasks() {
-	go func() {
-		slog.Info("await tasks queue has started listening")
-		for {
-			select {
-			case <-q.ctx.Done():
-				slog.Info("queue shutdown initiated, main context cancelled")
+	slog.Info("await tasks queue has started listening")
+	for {
+		select {
+		case <-q.ctx.Done():
+			slog.Info("queue shutdown initiated, main context cancelled")
+			return
+		case tasks, ok := <-*q.mainTaskChan:
+			if !ok {
+				slog.Error("reading from empty channel")
 				return
-			case tasks, ok := <-*q.mainTaskChan:
-				if !ok {
-					slog.Error("reading from empty channel")
-					return
-				}
-				q.enqueue(tasks...)
 			}
+			q.enqueue(tasks...)
 		}
-	}()
+	}
 }
 
 // awaitResults goroutine waiting for task results so that it can retry or fail them
 func (q *Queue) awaitResults() {
-	go func() {
-		slog.Info("await results queue has started listening")
-		for {
-			select {
-			case <-q.ctx.Done():
-				slog.Info("queue shutdown initiated, main context cancelled")
+	slog.Info("await results queue has started listening")
+	for {
+		select {
+		case <-q.ctx.Done():
+			slog.Info("queue shutdown initiated, main context cancelled")
+			return
+		case t, ok := <-q.resultChan:
+			if !ok {
+				slog.Error("reading from empty channel")
 				return
-			case t, ok := <-q.resultChan:
-				if !ok {
-					slog.Error("reading from empty channel")
-					return
-				}
+			}
 
-				if t.Error != nil {
-					if t.Retries >= q.maxTaskRetry {
-						t.Status = task.ProcessingFailed
-						fmt.Println(t.ErrorDetails)
-						slog.Error(fmt.Sprintf("error while processing task: %s no retries left saving failed status, error: %v \n", t.Id, t.Error))
-						err := q.db.UpdateTask(&t)
-						if err != nil {
-							slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
-						}
-						continue
+			if t.Error != nil {
+				if t.Retries >= q.maxTaskRetry {
+					t.Status = task.ProcessingFailed
+					fmt.Println(t.ErrorDetails)
+					slog.Error(fmt.Sprintf("error while processing task: %s no retries left saving failed status, error: %v \n", t.Id, t.Error))
+					err := q.db.UpdateTask(&t)
+					if err != nil {
+						slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
 					}
-
-					t.Retries++
-					if t.BackOffDuration != nil {
-						bckOffUntil := time.Now().Add(*t.BackOffDuration)
-						t.BackOffUntil = &bckOffUntil
-					}
-					slog.Info(fmt.Sprintf("failed: error while processing task: %s, retrying. retry attempt:%d error: %v \n", t.Id, t.Retries, t.Error))
-
-					t.Error = nil
-					q.enqueue(&t)
 					continue
 				}
 
-				t.Status = task.ProcessingSuccess
-				currTime := time.Now().UTC()
-				t.FinishedAt = &currTime
-				err := q.db.UpdateTask(&t)
-				if err != nil {
-					slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
+				t.Retries++
+				if t.BackOffDuration != nil {
+					bckOffUntil := time.Now().Add(*t.BackOffDuration)
+					t.BackOffUntil = &bckOffUntil
 				}
-				slog.Info(fmt.Sprintf("task:%s processed succesfully \n", t.Id))
+				slog.Info(fmt.Sprintf("failed: error while processing task: %s, retrying. retry attempt:%d error: %v \n", t.Id, t.Retries, t.Error))
+
+				t.Error = nil
+				q.enqueue(&t)
+				continue
 			}
+
+			t.Status = task.ProcessingSuccess
+			currTime := time.Now().UTC()
+			t.FinishedAt = &currTime
+			err := q.db.UpdateTask(&t)
+			if err != nil {
+				slog.Error(fmt.Sprintf("failed to update task details to database: %v \n", err))
+			}
+			slog.Info(fmt.Sprintf("task:%s processed succesfully \n", t.Id))
 		}
-	}()
+	}
 }
 
 // I thought a linked list would be good to keep track of execution
@@ -253,6 +248,18 @@ type node struct {
 	t    *task.Task
 	next *node
 	prev *node
+}
+
+func (l *linkedList) getFirst() *task.Task {
+	// TODO https://go.dev/doc/articles/race_detector#Runtime_Overheads
+	l.listMutex.Lock()
+	defer l.listMutex.Unlock()
+
+	if l.first == nil {
+		return nil
+	}
+
+	return l.first.t
 }
 
 func (l *linkedList) append(t *task.Task) {
