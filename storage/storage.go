@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
+	"os"
 
 	_ "github.com/lib/pq"
 	"github.com/sinderpl/AsyncTaskProcessor/task"
@@ -28,26 +30,37 @@ type PostgresStore struct {
 
 // Init is used to run db migrations on startup
 func (p *PostgresStore) Init() error {
-	return p.createTaskTable()
+	return p.applyMigrations()
 }
 
-// createTaskTable migration for tasks table
-func (p *PostgresStore) createTaskTable() error {
-	query := `create table if not exists tasks (
-		id varchar(100) primary key,
-		priority int,
-    	taskType varchar(30),
-    	status varchar(60),
-    	backOffDuration bigint,
-    	payload jsonb,      
-        createdAt timestamp,
-        createdBy varchar(30),
-    	startedAt  timestamp,
-    	finishedAt  timestamp,
-    	error varchar(100)
-		)`
+func (p *PostgresStore) applyMigrations() error{
+	err := p.apply("storage/migrations/create_table_task.up.sql")
 
-	if _, err := p.db.Exec(query); err != nil {
+	return err
+}
+
+func (p *PostgresStore) removeMigrations() error{
+	err := p.apply("storage/migrations/create_table_task.down.sql")
+
+	return err
+}
+
+func (p *PostgresStore) apply(name string) error {
+	file, err := os.Open(name)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	buf,err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	migration := string(buf)
+
+	if _, err := p.db.Exec(migration); err != nil {
 		return err
 	}
 
@@ -74,7 +87,7 @@ func NewPostgresStore(host string, user string, dbname string, password string) 
 }
 
 // CreateTask creates the task row in the database
-func (p PostgresStore) CreateTask(t *task.Task) error {
+func (p *PostgresStore) CreateTask(t *task.Task) error {
 	query := `
 		insert into tasks
 		(id, priority, taskType, status, backOffDuration, payload, createdAt, createdBy, error)
@@ -102,7 +115,7 @@ func (p PostgresStore) CreateTask(t *task.Task) error {
 }
 
 // UpdateTask takes in task id and attempts to update the row in the database
-func (p PostgresStore) UpdateTask(t *task.Task) error {
+func (p *PostgresStore) UpdateTask(t *task.Task) error {
 
 	// Prepare the SQL update statement
 	sqlStatement := `
@@ -130,7 +143,7 @@ func (p PostgresStore) UpdateTask(t *task.Task) error {
 }
 
 // GetTaskById retrieves the task info from the database
-func (p PostgresStore) GetTaskById(id string) (*task.Task, error) {
+func (p *PostgresStore) GetTaskById(id string) (*task.Task, error) {
 	rows, err := p.db.Query("select * from tasks where id = $1", id)
 
 	if err != nil {
