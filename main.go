@@ -14,9 +14,10 @@ import (
 	"github.com/sinderpl/AsyncTaskProcessor/task"
 )
 
+const defaultConfig = "config/ConfigurationLocal.yml"
+
 var (
 	cfg        = Config{}
-	configPath = "config/Configuration.yml"
 )
 
 type Config struct {
@@ -38,7 +39,7 @@ type Config struct {
 
 func main() {
 
-	cfgPath := flag.String("cfg", configPath, "specify which config file to point to")
+	cfgPath := flag.String("cfg", defaultConfig, "specify which config file to point to")
 	flag.Parse()
 
 	cfgFile, err := os.ReadFile(*cfgPath)

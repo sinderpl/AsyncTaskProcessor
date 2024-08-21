@@ -1,32 +1,4 @@
-# Dockerfile References: https://docs.docker.com/engine/reference/builder/
-
-# Start from golang:1.18-alpine base image
-#FROM golang:1.18-alpine as builder
-#
-## Install git
-#RUN apt-get update && \
-#    apt-get upgrade -y && \
-#    apt-get install -y git
-#
-## Setup
-#WORKDIR /app
-#COPY go.mod ./
-#RUN go mod download
-#COPY . .
-#
-## Build and run
-#RUN go build -o main .
-#
-## Expose port 8080 to the outside world
-##EXPOSE 8080
-#
-## Run the executable
-#CMD ["./main"]
-
-# Use the official Golang image to build the application
 FROM golang:1.22 as builder
-
-#RUN apt update && apt install libc6
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -41,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o main .
+RUN go build -o main . -cfg config/Configuration.yml
 
 # Start a new stage from scratch
 FROM golang:1.22
