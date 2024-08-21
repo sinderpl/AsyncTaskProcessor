@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+const TypeSendEmail      TypeOf = "SendEmail"
+
 // SendEmail simulates sending a email
 type SendEmail struct {
 	SendTo   []string `json:"sendTo"`

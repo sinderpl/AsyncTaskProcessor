@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+const TypeGenerateReport TypeOf = "GenerateReport"
+
 // GenerateReport simulates generating a report
 type GenerateReport struct {
 	Notify     []string `json:"notify"`

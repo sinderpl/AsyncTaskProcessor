@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+const TypeCPUProcess     TypeOf = "CPUProcess"
+
 // CPUProcess simulates CPU processing time
 type CPUProcess struct {
 	ProcessType string `json:"processType"`

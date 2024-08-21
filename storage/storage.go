@@ -15,7 +15,6 @@ import (
 
 // Package storage deals with persisting task info in the database
 
-// TODO add batch create task
 type Storage interface {
 	CreateTask(*task.Task) error
 	UpdateTask(*task.Task) error

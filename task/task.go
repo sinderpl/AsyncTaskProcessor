@@ -21,14 +21,6 @@ type Processable interface {
 // TypeOf enum describing supported type of report
 type TypeOf string
 
-// TODO perhaps find a better way to extend these enums
-// If updating make sure to update the isValidTypeOf function
-const (
-	TypeSendEmail      TypeOf = "SendEmail"
-	TypeGenerateReport TypeOf = "GenerateReport"
-	TypeCPUProcess     TypeOf = "CPUProcess"
-)
-
 func isValidTypeOf(typeOf TypeOf) bool {
 	// Unfortunate workaround due to lack of enums in GO
 	switch typeOf {
@@ -149,7 +141,6 @@ func CreateTask(opts ...option) (*Task, error) {
 		return nil, fmt.Errorf(" task payload validation failed: %v", err)
 	}
 
-	// TODO The composition here could perhaps be improved
 	t.ProcessableTask = process
 
 	return t, nil
